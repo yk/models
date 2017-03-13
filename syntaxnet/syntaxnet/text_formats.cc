@@ -16,6 +16,7 @@ limitations under the License.
 #include <memory>
 #include <string>
 #include <vector>
+#include <iostream>
 
 #include "syntaxnet/document_format.h"
 #include "syntaxnet/segmenter_utils.h"
@@ -103,6 +104,19 @@ class CoNLLSyntaxFormat : public DocumentFormat {
       // Skip comment lines.
       if (fields[0][0] == '#') continue;
 
+      if (fields[0][0] == 'T') {
+          for(int j=1;j<fields.size();j+=2){
+            auto* trans = sentence->add_transition();
+            auto& a = fields[j];
+            //std::cerr << lines[i] << " " << std::to_string(fields.size()) << std::endl;
+            //std::cerr << a << std::endl;
+            auto& l = fields[j+1];
+            trans->set_action(std::stoi(a));
+            trans->set_label(l);
+          }
+        continue;
+      }
+
       // Skip CoNLLU lines for multiword tokens which are indicated by
       // hyphenated line numbers, e.g., "2-4".
       // http://universaldependencies.github.io/docs/format.html
@@ -184,6 +198,18 @@ class CoNLLSyntaxFormat : public DocumentFormat {
       fields[9] = "_";
       lines.push_back(utils::Join(fields, "\t"));
     }
+
+    std::vector<string> transitions(sentence.transition_size() * 2 + 1);
+    //std::cerr << std::to_string(sentence.transition_size()) << std::endl;
+    transitions[0] = "T";
+    for(int i=0;i<sentence.transition_size();i++){
+        auto& trans = sentence.transition(i);
+        transitions[2*i + 1] = std::to_string(trans.action());
+        transitions[2*i + 2] = trans.label();
+        //std::cerr << trans.label() << std::endl;
+    }
+    lines.push_back(utils::Join(transitions, "\t"));
+
     *value = tensorflow::strings::StrCat(utils::Join(lines, "\n"), "\n\n");
   }
 

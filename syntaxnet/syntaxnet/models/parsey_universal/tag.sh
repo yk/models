@@ -31,12 +31,12 @@ MODEL_DIR=$1
 $PARSER_EVAL \
   --input=stdin-conll \
   --output=stdout-conll \
-  --hidden_layer_sizes=512,512 \
-  --arg_prefix=brain_parser \
+  --hidden_layer_sizes=64 \
+  --arg_prefix=brain_tagger \
   --graph_builder=structured \
   --task_context=$CONTEXT \
   --resource_dir=$MODEL_DIR \
-  --model_path=$MODEL_DIR/parser-params \
+  --model_path=$MODEL_DIR/tagger-params \
   --slim_model \
   --batch_size=1024 \
   --alsologtostderr

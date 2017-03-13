@@ -20,6 +20,7 @@ limitations under the License.
 #include <string>
 #include <utility>
 #include <vector>
+#include <iostream>
 
 #include "syntaxnet/base.h"
 #include "syntaxnet/parser_state.h"
@@ -37,6 +38,7 @@ limitations under the License.
 #include "tensorflow/core/lib/core/status.h"
 #include "tensorflow/core/platform/env.h"
 
+//#define VLOG_IS_ON(lvl) ((lvl) <= 1)
 using tensorflow::DEVICE_CPU;
 using tensorflow::DT_BOOL;
 using tensorflow::DT_FLOAT;
@@ -74,6 +76,7 @@ struct ParserStateWithHistory {
     transitions.PerformAction(action, state.get());
     slot_history.push_back(slot);
     action_history.push_back(action);
+    //std::cerr << "AA" << std::to_string(action) << " BB " << state->ToString() << std::endl;
     score_history.push_back(score);
   }
 
@@ -514,6 +517,8 @@ class BatchState {
 
   const string &ScoringType() const { return options_.scoring_type; }
 
+  // Transition system.
+  std::unique_ptr<ParserTransitionSystem> transition_system_;
  private:
   const BatchStateOptions options_;
 
@@ -523,8 +528,6 @@ class BatchState {
   // Batch of sentences, and the corresponding parser states.
   std::unique_ptr<SentenceBatch> sentence_batch_;
 
-  // Transition system.
-  std::unique_ptr<ParserTransitionSystem> transition_system_;
 
   // Label map for transition system..
   const TermFrequencyMap *label_map_;
@@ -765,6 +768,7 @@ class BeamParserOutput : public OpKernel {
                 << utils::Join(item.second->score_history, " ");
         VLOG(2) << "ACTION HISTORY: "
                 << utils::Join(item.second->action_history, " ");
+        //std::cerr << utils::Join(item.second->action_history, " ") << std::endl;
 
         // Record where the gold path ended up.
         if (item.second->state->is_gold()) {
@@ -849,7 +853,16 @@ class BeamEvalOutput : public OpKernel {
         const auto &item = *batch_state->Beam(beam_id).slots_.rbegin();
         ComputeTokenAccuracy(*item.second->state, batch_state->ScoringType(),
                              &num_tokens, &num_correct);
-        documents.push_back(item.second->state->sentence());
+        //VLOG(1) << "ACTION HISTORY";
+        auto* sentence = item.second->state->mutable_sentence();
+        sentence->clear_transition(); // this seems to clear the previous tagger transitions
+        for(auto &a : item.second->action_history){
+            //VLOG(1) << batch_state->transition_system_->ActionAsString(a, *item.second->state);
+            Transition* trans = sentence->add_transition();
+            trans->set_action(a);
+            trans->set_label(batch_state->transition_system_->ActionAsString(a, *item.second->state));
+        }
+        documents.push_back(*sentence);
         item.second->state->AddParseToDocument(&documents.back());
       }
     }
@@ -864,6 +877,7 @@ class BeamEvalOutput : public OpKernel {
     OP_REQUIRES_OK(context, context->allocate_output(
                                 1, TensorShape({output_size}), &output));
     for (int i = 0; i < output_size; ++i) {
+        //VLOG(1) << documents[i].SerializeAsString();
       output->vec<string>()(i) = documents[i].SerializeAsString();
     }
   }

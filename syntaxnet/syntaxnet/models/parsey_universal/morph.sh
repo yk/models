@@ -29,14 +29,14 @@ fi
 MODEL_DIR=$1
 
 $PARSER_EVAL \
-  --input=stdin-conll \
+  --input=$INPUT_FORMAT \
   --output=stdout-conll \
-  --hidden_layer_sizes=512,512 \
-  --arg_prefix=brain_parser \
+  --hidden_layer_sizes=64 \
+  --arg_prefix=brain_morpher \
   --graph_builder=structured \
   --task_context=$CONTEXT \
   --resource_dir=$MODEL_DIR \
-  --model_path=$MODEL_DIR/parser-params \
+  --model_path=$MODEL_DIR/morpher-params \
   --slim_model \
   --batch_size=1024 \
   --alsologtostderr

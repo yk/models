@@ -25,6 +25,8 @@ import tensorflow as tf
 from tensorflow.python.platform import gfile
 from tensorflow.python.platform import tf_logging as logging
 
+logging.set_verbosity(logging.WARN)
+
 from google.protobuf import text_format
 
 from syntaxnet import sentence_pb2
@@ -152,7 +154,7 @@ def Eval(sess):
 
 
 def main(unused_argv):
-  logging.set_verbosity(logging.INFO)
+  # logging.set_verbosity(logging.INFO)
   with tf.Session() as sess:
     Eval(sess)
 

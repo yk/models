@@ -16,7 +16,15 @@ message Sentence {
   // Tokenization of the sentence.
   repeated Token token = 3;
 
+  repeated Transition transition = 99;
+
   extensions 1000 to max;
+}
+
+message Transition {
+    required int32 action = 1;
+    
+    required string label = 2;
 }
 
 // A document token marks a span of bytes in the document text as a token
