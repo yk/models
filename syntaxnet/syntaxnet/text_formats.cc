@@ -99,23 +99,30 @@ class CoNLLSyntaxFormat : public DocumentFormat {
       // Split line into tab-separated fields.
       fields.clear();
       fields = utils::Split(lines[i], '\t');
-      if (fields.empty()) continue;
+      if (fields.empty()){
+          continue;
+      }
 
       // Skip comment lines.
       if (fields[0][0] == '#') continue;
 
       if (fields[0][0] == 'T') {
-          for(int j=1;j<fields.size();j+=2){
-            auto* trans = sentence->add_transition();
-            auto& a = fields[j];
-            //std::cerr << lines[i] << " " << std::to_string(fields.size()) << std::endl;
-            //std::cerr << a << std::endl;
-            auto& l = fields[j+1];
-            trans->set_action(std::stoi(a));
-            trans->set_label(l);
+          continue;
+          if(fields.size() > 1){
+            for(int j=1;j<fields.size();j+=2){
+
+                auto* trans = sentence->add_transition();
+                auto& a = fields[j];
+                //std::cerr << lines[i] << " " << std::to_string(fields.size()) << std::endl;
+                //std::cerr << a << std::endl;
+                auto& l = fields[j+1];
+                trans->set_action(std::stoi(a));
+                trans->set_label(l);
+            }
           }
         continue;
       }
+
 
       // Skip CoNLLU lines for multiword tokens which are indicated by
       // hyphenated line numbers, e.g., "2-4".
@@ -522,6 +529,7 @@ class UntokenizedTextFormat : public TokenizedTextFormat {
       // If the sentence was empty (e.g., blank lines at the beginning of a
       // file), then don't save it.
       delete sentence;
+        //std::cerr << "SKIPPING: " << value << std::endl;
     }
   }
 

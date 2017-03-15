@@ -360,3 +360,167 @@ input {
     file_pattern: '-'
   }
 }
+
+input {
+  name: 'nc-fr-noblank'
+  record_format: 'untokenized-text'
+  Part {
+    file_pattern: '/local/home/ykilcher/tmp/fr-en.fr.noblank'
+  }
+}
+
+input {
+  name: 'nc-en-noblank'
+  record_format: 'untokenized-text'
+  Part {
+    file_pattern: '/local/home/ykilcher/tmp/fr-en.en.noblank'
+  }
+}
+
+
+input {
+  name: 'nc-fr-tkn'
+  record_format: 'conll-sentence'
+  Part {
+    file_pattern: '/local/home/ykilcher/tmp/fr-en.fr.tkn'
+  }
+}
+
+input {
+  name: 'nc-en-tkn'
+  record_format: 'conll-sentence'
+  Part {
+    file_pattern: '/local/home/ykilcher/tmp/fr-en.en.tkn'
+  }
+}
+
+
+input {
+  name: 'nc-fr-morph'
+  record_format: 'conll-sentence'
+  Part {
+    file_pattern: '/local/home/ykilcher/tmp/fr-en.fr.morph'
+  }
+}
+
+input {
+  name: 'nc-en-morph'
+  record_format: 'conll-sentence'
+  Part {
+    file_pattern: '/local/home/ykilcher/tmp/fr-en.en.morph'
+  }
+}
+
+input {
+  name: 'nc-fr-tag'
+  record_format: 'conll-sentence'
+  Part {
+    file_pattern: '/local/home/ykilcher/tmp/fr-en.fr.tag'
+  }
+}
+
+input {
+  name: 'nc-en-tag'
+  record_format: 'conll-sentence'
+  Part {
+    file_pattern: '/local/home/ykilcher/tmp/fr-en.en.tag'
+  }
+}
+
+input {
+  name: 'nc-fr-parse'
+  record_format: 'conll-sentence'
+  Part {
+    file_pattern: '/local/home/ykilcher/tmp/fr-en.fr.parse'
+  }
+}
+
+input {
+  name: 'nc-en-parse'
+  record_format: 'conll-sentence'
+  Part {
+    file_pattern: '/local/home/ykilcher/tmp/fr-en.en.parse'
+  }
+}
+
+input {
+  name: 'nc-inv-fr-noblank'
+  record_format: 'untokenized-text'
+  Part {
+    file_pattern: '/local/home/ykilcher/tmp/fr-en.inv.fr.noblank'
+  }
+}
+
+input {
+  name: 'nc-inv-en-noblank'
+  record_format: 'untokenized-text'
+  Part {
+    file_pattern: '/local/home/ykilcher/tmp/fr-en.inv.en.noblank'
+  }
+}
+
+
+input {
+  name: 'nc-inv-fr-tkn'
+  record_format: 'conll-sentence'
+  Part {
+    file_pattern: '/local/home/ykilcher/tmp/fr-en.inv.fr.tkn'
+  }
+}
+
+input {
+  name: 'nc-inv-en-tkn'
+  record_format: 'conll-sentence'
+  Part {
+    file_pattern: '/local/home/ykilcher/tmp/fr-en.inv.en.tkn'
+  }
+}
+
+
+input {
+  name: 'nc-inv-fr-morph'
+  record_format: 'conll-sentence'
+  Part {
+    file_pattern: '/local/home/ykilcher/tmp/fr-en.inv.fr.morph'
+  }
+}
+
+input {
+  name: 'nc-inv-en-morph'
+  record_format: 'conll-sentence'
+  Part {
+    file_pattern: '/local/home/ykilcher/tmp/fr-en.inv.en.morph'
+  }
+}
+
+input {
+  name: 'nc-inv-fr-tag'
+  record_format: 'conll-sentence'
+  Part {
+    file_pattern: '/local/home/ykilcher/tmp/fr-en.inv.fr.tag'
+  }
+}
+
+input {
+  name: 'nc-inv-en-tag'
+  record_format: 'conll-sentence'
+  Part {
+    file_pattern: '/local/home/ykilcher/tmp/fr-en.inv.en.tag'
+  }
+}
+
+input {
+  name: 'nc-inv-fr-parse'
+  record_format: 'conll-sentence'
+  Part {
+    file_pattern: '/local/home/ykilcher/tmp/fr-en.inv.fr.parse'
+  }
+}
+
+input {
+  name: 'nc-inv-en-parse'
+  record_format: 'conll-sentence'
+  Part {
+    file_pattern: '/local/home/ykilcher/tmp/fr-en.inv.en.parse'
+  }
+}
