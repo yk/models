@@ -206,9 +206,21 @@ class FeatureSize : public OpKernel {
         TaskContext::InputFile(*task_context_.GetInput("label-map"));
     label_map_ = SharedStoreUtils::GetWithDefaultName<TermFrequencyMap>(
         label_map_path, 0, 0);
+    string word_map_path =
+        TaskContext::InputFile(*task_context_.GetInput("word-map"));
+    word_map_ = SharedStoreUtils::GetWithDefaultName<TermFrequencyMap>(
+        word_map_path, 0, 0);
+    string tag_map_path =
+        TaskContext::InputFile(*task_context_.GetInput("tag-map"));
+    tag_map_ = SharedStoreUtils::GetWithDefaultName<TermFrequencyMap>(
+        tag_map_path, 0, 0);
   }
 
-  ~FeatureSize() override { SharedStore::Release(label_map_); }
+  ~FeatureSize() override {
+      SharedStore::Release(label_map_);
+      SharedStore::Release(word_map_);
+      SharedStore::Release(tag_map_);
+  }
 
   void Compute(OpKernelContext *context) override {
     // Computes feature sizes.
@@ -240,7 +252,7 @@ class FeatureSize : public OpKernel {
     transition_system->Setup(&task_context_);
     transition_system->Init(&task_context_);
     num_actions->scalar<int32>()() =
-        transition_system->NumActions(label_map_->Size());
+        transition_system->NumActions(word_map_->Size(), label_map_->Size());
   }
 
  private:
@@ -249,6 +261,8 @@ class FeatureSize : public OpKernel {
 
   // Dependency label map used in transition system.
   const TermFrequencyMap *label_map_;
+  const TermFrequencyMap *word_map_;
+  const TermFrequencyMap *tag_map_;
 
   // Prefix for context parameters.
   string arg_prefix_;

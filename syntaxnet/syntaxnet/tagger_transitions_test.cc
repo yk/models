@@ -54,7 +54,7 @@ class TaggerTransitionTest : public ::testing::Test {
   ParserState *NewClonedState(Sentence *sentence) {
     ParserState state(sentence, transition_system_->NewTransitionState(
                                     true /* training mode */),
-                      &label_map_);
+                      &label_map_, nullptr, nullptr);
     return state.Clone();
   }
 

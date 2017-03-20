@@ -178,7 +178,7 @@ class TaggerTransitionSystem : public ParserTransitionSystem {
   int NumActionTypes() const override { return 1; }
 
   // Returns the number of possible actions.
-  int NumActions(int num_labels) const override { return tag_map_->Size(); }
+  int NumActions(int num_words, int num_labels) const override { return tag_map_->Size(); }
 
   // The default action for a given state is assigning the most frequent tag.
   ParserAction GetDefaultAction(const ParserState &state) const override {

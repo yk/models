@@ -47,7 +47,7 @@ class BinarySegmentStateTest : public ::testing::Test {
 
 TEST_F(BinarySegmentStateTest, AddStartLastStartNumStartsTest) {
   BinarySegmentState *segment_state = new BinarySegmentState();
-  ParserState state(sentence_.get(), segment_state, &label_map_);
+  ParserState state(sentence_.get(), segment_state, &label_map_, nullptr, nullptr);
 
   // Test segment_state initialized with zero starts.
   EXPECT_EQ(0, segment_state->NumStarts(state));
@@ -72,7 +72,7 @@ TEST_F(BinarySegmentStateTest, AddStartLastStartNumStartsTest) {
 
 TEST_F(BinarySegmentStateTest, AddParseToDocumentTest) {
   BinarySegmentState *segment_state = new BinarySegmentState();
-  ParserState state(sentence_.get(), segment_state, &label_map_);
+  ParserState state(sentence_.get(), segment_state, &label_map_, nullptr, nullptr);
 
   // Test gold segmentation.
   // 0   1   2    3   4   5   6
@@ -148,7 +148,7 @@ TEST_F(BinarySegmentStateTest, SpaceDocumentTest) {
       "token { word: '\t' start: 2 end: 2 } ";
   TextFormat::ParseFromString(str_sentence, sentence_.get());
   BinarySegmentState *segment_state = new BinarySegmentState();
-  ParserState state(sentence_.get(), segment_state, &label_map_);
+  ParserState state(sentence_.get(), segment_state, &label_map_, nullptr, nullptr);
 
   // Break-chars should always be skipped, no matter how they are tagged.
   // 0    1     2
@@ -176,7 +176,7 @@ TEST_F(BinarySegmentStateTest, DocumentBeginWithSpaceTest) {
       "token { word: '格' start: 4 end: 6 } ";
   TextFormat::ParseFromString(str_sentence, sentence_.get());
   BinarySegmentState *segment_state = new BinarySegmentState();
-  ParserState state(sentence_.get(), segment_state, &label_map_);
+  ParserState state(sentence_.get(), segment_state, &label_map_, nullptr, nullptr);
 
   // 0    1    2
   //' '   空   格
@@ -209,7 +209,7 @@ TEST_F(BinarySegmentStateTest, EmptyDocumentTest) {
   const char *str_sentence = "text: '' ";
   TextFormat::ParseFromString(str_sentence, sentence_.get());
   BinarySegmentState *segment_state = new BinarySegmentState();
-  ParserState state(sentence_.get(), segment_state, &label_map_);
+  ParserState state(sentence_.get(), segment_state, &label_map_, nullptr, nullptr);
   Sentence sentence_with_annotation = *sentence_;
   segment_state->AddParseToDocument(state, false, &sentence_with_annotation);
   ASSERT_EQ(0, sentence_with_annotation.token_size());

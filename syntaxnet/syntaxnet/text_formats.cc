@@ -90,11 +90,15 @@ class CoNLLSyntaxFormat : public DocumentFormat {
 
     // Each line corresponds to one token.
     string text;
+    string sourceText;
+    string targetText;
     std::vector<string> lines = utils::Split(value, '\n');
 
     // Add each token to the sentence.
     std::vector<string> fields;
     int expected_id = 1;
+    int expected_source_id = 1;
+    int expected_target_id = 1;
     for (size_t i = 0; i < lines.size(); ++i) {
       // Split line into tab-separated fields.
       fields.clear();
@@ -106,7 +110,7 @@ class CoNLLSyntaxFormat : public DocumentFormat {
       // Skip comment lines.
       if (fields[0][0] == '#') continue;
 
-      if (fields[0][0] == 'T') {
+      if (fields[0][0] == 'T' || fields[0][0] == 'S' && fields[0][1] == 'T' || fields[0][0] == 'R' && fields[0][1] == 'T') {
           continue;
           if(fields.size() > 1){
             for(int j=1;j<fields.size();j+=2){
@@ -123,7 +127,6 @@ class CoNLLSyntaxFormat : public DocumentFormat {
         continue;
       }
 
-
       // Skip CoNLLU lines for multiword tokens which are indicated by
       // hyphenated line numbers, e.g., "2-4".
       // http://universaldependencies.github.io/docs/format.html
@@ -138,11 +141,27 @@ class CoNLLSyntaxFormat : public DocumentFormat {
       CHECK_GE(fields.size(), 8)
           << "Every line has to have at least 8 tab separated fields.";
 
-      // Check that the ids follow the expected format.
-      const int id = utils::ParseUsing<int>(fields[0], 0, utils::ParseInt32);
-      CHECK_EQ(expected_id++, id)
-          << "Token ids start at 1 for each new sentence and increase by 1 "
-          << "on each new token. Sentences are separated by an empty line.";
+      bool isSource = fields[0][0] == 'S';
+      bool isTarget = fields[0][0] == 'R';
+
+      if(isSource){
+        // Check that the ids follow the expected format.
+        const int id = utils::ParseUsing<int>(fields[0].substr(1), 0, utils::ParseInt32);
+        CHECK_EQ(expected_source_id++, id)
+            << "Token ids start at 1 for each new sentence and increase by 1 "
+            << "on each new token. Sentences are separated by an empty line.";
+      }else if(isTarget){
+        const int id = utils::ParseUsing<int>(fields[0].substr(1), 0, utils::ParseInt32);
+        CHECK_EQ(expected_target_id++, id)
+            << "Token ids start at 1 for each new sentence and increase by 1 "
+            << "on each new token. Sentences are separated by an empty line.";
+      }else{
+        // Check that the ids follow the expected format.
+        const int id = utils::ParseUsing<int>(fields[0], 0, utils::ParseInt32);
+        CHECK_EQ(expected_id++, id)
+            << "Token ids start at 1 for each new sentence and increase by 1 "
+            << "on each new token. Sentences are separated by an empty line.";
+      }
 
       // Get relevant fields.
       const string &word = fields[1];
@@ -153,28 +172,52 @@ class CoNLLSyntaxFormat : public DocumentFormat {
       const string &label = fields[7];
 
       // Add token to sentence text.
-      if (!text.empty()) text.append(" ");
-      const int start = text.size();
-      const int end = start + word.size() - 1;
-      text.append(word);
+      int start, end;
+      if(isSource){
+        if (!sourceText.empty()) sourceText.append(" ");
+        start = sourceText.size();
+        end = start + word.size() - 1;
+        sourceText.append(word);
+      } else if(isTarget){
+        if (!targetText.empty()) targetText.append(" ");
+        start = targetText.size();
+        end = start + word.size() - 1;
+        targetText.append(word);
+      }else{
+        if (!text.empty()) text.append(" ");
+        start = text.size();
+        end = start + word.size() - 1;
+        text.append(word);
+      }
 
       // Add token to sentence.
-      Token *token = sentence->add_token();
-      token->set_word(word);
-      token->set_start(start);
-      token->set_end(end);
-      if (head > 0) token->set_head(head - 1);
-      if (!tag.empty()) token->set_tag(tag);
-      if (!cpostag.empty()) token->set_category(cpostag);
-      if (!label.empty()) token->set_label(label);
-      if (!attributes.empty()) AddMorphAttributes(attributes, token);
-      if (join_category_to_pos_) JoinCategoryToPos(token);
-      if (add_pos_as_attribute_) AddPosAsAttribute(token);
+      auto* oldSent = sentence;
+      {
+        Sentence* sentence = oldSent;
+        if(isSource){
+            sentence = sentence->mutable_source();
+        }else if(isTarget){
+            sentence = sentence->mutable_target();
+        }
+        Token *token = sentence->add_token();
+        token->set_word(word);
+        token->set_start(start);
+        token->set_end(end);
+        if (head > 0) token->set_head(head - 1);
+        if (!tag.empty()) token->set_tag(tag);
+        if (!cpostag.empty()) token->set_category(cpostag);
+        if (!label.empty()) token->set_label(label);
+        if (!attributes.empty()) AddMorphAttributes(attributes, token);
+        if (join_category_to_pos_) JoinCategoryToPos(token);
+        if (add_pos_as_attribute_) AddPosAsAttribute(token);
+      }
     }
 
-    if (sentence->token_size() > 0) {
+    if (sentence->token_size() > 0 || sentence->source().token_size() > 0 && sentence->target().token_size() > 0) {
       sentence->set_docid(key);
       sentence->set_text(text);
+      sentence->mutable_source()->set_text(sourceText);
+      sentence->mutable_target()->set_text(targetText);
       sentences->push_back(sentence);
     } else {
       // If the sentence was empty (e.g., blank lines at the beginning of a
@@ -216,6 +259,29 @@ class CoNLLSyntaxFormat : public DocumentFormat {
         //std::cerr << trans.label() << std::endl;
     }
     lines.push_back(utils::Join(transitions, "\t"));
+
+    if(sentence.source().token_size() > 0){
+        string sourceValue;
+        string dummyKey;
+        ConvertToString(sentence.source(), &dummyKey, &sourceValue);
+        std::vector<string> sourceLines = utils::Split(sourceValue, '\n');
+        sourceLines.pop_back();
+        for(auto& line : sourceLines){
+            lines.push_back("S" + line);
+        }
+    }
+
+    if(sentence.target().token_size() > 0){
+        string targetValue;
+        string dummyKey;
+        ConvertToString(sentence.target(), &dummyKey, &targetValue);
+        std::vector<string> targetLines = utils::Split(targetValue, '\n');
+        targetLines.pop_back();
+        for(auto& line : targetLines){
+            lines.push_back("R" + line);
+        }
+    }
+
 
     *value = tensorflow::strings::StrCat(utils::Join(lines, "\n"), "\n\n");
   }

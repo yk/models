@@ -102,7 +102,7 @@ class ParserTransitionSystem
   virtual int NumActionTypes() const = 0;
 
   // Returns the number of actions.
-  virtual int NumActions(int num_labels) const = 0;
+  virtual int NumActions(int num_words, int num_labels) const = 0;
 
   // Internally creates the set of outcomes (when transition systems support a
   // variable number of actions).

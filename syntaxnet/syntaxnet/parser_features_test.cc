@@ -78,7 +78,7 @@ class ParserFeatureFunctionTest : public ::testing::Test {
 
     // Prepare a parser state.
     state_.reset(new ParserState(&sentence_, nullptr /* no transition state */,
-                                 &label_map_));
+                                 &label_map_, nullptr, nullptr));
   }
 
   // Prepares a feature for computations.

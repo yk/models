@@ -18,6 +18,9 @@ message Sentence {
 
   repeated Transition transition = 99;
 
+  optional Sentence source = 101;
+  optional Sentence target = 102;
+
   extensions 1000 to max;
 }
 

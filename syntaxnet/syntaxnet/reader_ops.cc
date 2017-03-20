@@ -95,6 +95,16 @@ class ParsingReader : public OpKernel {
     label_map_ = SharedStoreUtils::GetWithDefaultName<TermFrequencyMap>(
         label_map_path, 0, 0);
 
+    string word_map_path =
+        TaskContext::InputFile(*task_context_.GetInput("word-map"));
+    word_map_ = SharedStoreUtils::GetWithDefaultName<TermFrequencyMap>(
+        word_map_path, 0, 0);
+
+    string tag_map_path =
+        TaskContext::InputFile(*task_context_.GetInput("tag-map"));
+    tag_map_ = SharedStoreUtils::GetWithDefaultName<TermFrequencyMap>(
+        tag_map_path, 0, 0);
+
     // Checks number of feature groups matches the task context.
     const int required_size = features_->embedding_dims().size();
     OP_REQUIRES(
@@ -102,7 +112,11 @@ class ParsingReader : public OpKernel {
         InvalidArgument("Task context requires feature_size=", required_size));
   }
 
-  ~ParsingReader() override { SharedStore::Release(label_map_); }
+  ~ParsingReader() override { 
+      SharedStore::Release(label_map_); 
+      SharedStore::Release(word_map_); 
+      SharedStore::Release(tag_map_); 
+  }
 
   // Creates a new ParserState if there's another sentence to be read.
   virtual void AdvanceSentence(int index) {
@@ -110,7 +124,7 @@ class ParsingReader : public OpKernel {
     if (sentence_batch_->AdvanceSentence(index)) {
       states_[index].reset(new ParserState(
           sentence_batch_->sentence(index),
-          transition_system_->NewTransitionState(true), label_map_));
+          transition_system_->NewTransitionState(true), label_map_, word_map_, tag_map_));
       workspaces_[index].Reset(workspace_registry_);
       features_->Preprocess(&workspaces_[index], states_[index].get());
     }
@@ -243,6 +257,8 @@ class ParsingReader : public OpKernel {
 
   // Dependency label map used in transition system.
   const TermFrequencyMap *label_map_;
+  const TermFrequencyMap *word_map_;
+  const TermFrequencyMap *tag_map_;
 
   // Transition system.
   std::unique_ptr<ParserTransitionSystem> transition_system_;

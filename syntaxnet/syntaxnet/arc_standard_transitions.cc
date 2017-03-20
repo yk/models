@@ -45,13 +45,19 @@ class ArcStandardTransitionState : public ParserTransitionState {
   }
 
   // Pushes the root on the stack before using the parser state in parsing.
-  void Init(ParserState *state) override { state->Push(-1); }
+  void Init(ParserState *state) override { 
+      state->stack_ = 0;
+      state->head_.push_back(-1);
+      state->label_.push_back(state->RootLabel());
+  }
 
   // Adds transition state specific annotations to the document.
   void AddParseToDocument(const ParserState &state, bool rewrite_root_labels,
                           Sentence *sentence) const override {
+    sentence->clear_token();
     for (int i = 0; i < state.NumTokens(); ++i) {
       Token *token = sentence->mutable_token(i);
+      token->set_word(std::to_string(state.words_.at(i)));
       token->set_label(state.LabelAsString(state.Label(i)));
       if (state.Head(i) != -1) {
         token->set_head(state.Head(i));
@@ -66,25 +72,19 @@ class ArcStandardTransitionState : public ParserTransitionState {
 
   // Whether a parsed token should be considered correct for evaluation.
   bool IsTokenCorrect(const ParserState &state, int index) const override {
-    return state.GoldHead(index) == state.Head(index);
+    auto a = state.GoldHead(index) == state.Head(index);
+
+    auto windex = state.stack_ + state.words_.size() - index - 1;
+    auto b = state.Word(windex) == state.GoldWord(windex);
+
+    return a && b;
   }
 
   // Returns a human readable string representation of this state.
   string ToString(const ParserState &state) const override {
     string str;
-    str.append("[");
-    for (int i = state.StackSize() - 1; i >= 0; --i) {
-      const string &word = state.GetToken(state.Stack(i)).word();
-      if (i != state.StackSize() - 1) str.append(" ");
-      if (word == "") {
-        str.append(ParserState::kRootLabel);
-      } else {
-        str.append(word);
-      }
-    }
-    str.append("]");
-    for (int i = state.Next(); i < state.NumTokens(); ++i) {
-      tensorflow::strings::StrAppend(&str, " ", state.GetToken(i).word());
+    for (int i = 0; i < state.NumTokens(); ++i) {
+      tensorflow::strings::StrAppend(&str, " ", std::to_string(state.Word(i)));
     }
     return str;
   }
@@ -100,40 +100,44 @@ class ArcStandardTransitionSystem : public ParserTransitionSystem {
   };
 
   // The SHIFT action uses the same value as the corresponding action type.
-  static ParserAction ShiftAction() { return SHIFT; }
+  static ParserAction ShiftAction(int word) { 
+      return word << 2; 
+  }
 
   // The LEFT_ARC action converts the label to an odd number greater or equal
   // to 1.
-  static ParserAction LeftArcAction(int label) { return 1 + (label << 1); }
+  static ParserAction LeftArcAction(int label) { 
+      return 1 + (label << 2); 
+  }
 
   // The RIGHT_ARC action converts the label to an even number greater or equal
   // to 2.
   static ParserAction RightArcAction(int label) {
-    return 1 + ((label << 1) | 1);
+    //return 1 + ((label << 1) | 1);
+    return 2 + (label << 2);
   }
 
   // Extracts the action type from a given parser action.
   static ParserActionType ActionType(ParserAction action) {
-    return static_cast<ParserActionType>(action < 1 ? action
-                                                    : 1 + (~action & 1));
+    return static_cast<ParserActionType>(action % (1 << 2));
   }
 
   // Extracts the label from a given parser action. If the action is SHIFT,
   // returns -1.
   static int Label(ParserAction action) {
-    return action < 1 ? -1 : (action - 1) >> 1;
+    return action >> 2;
   }
 
   // Returns the number of action types.
   int NumActionTypes() const override { return 3; }
 
   // Returns the number of possible actions.
-  int NumActions(int num_labels) const override { return 1 + 2 * num_labels; }
+  int NumActions(int num_words, int num_labels) const override { return 1 * num_words + 2 * num_labels; }
 
   // The method returns the default action for a given state.
   ParserAction GetDefaultAction(const ParserState &state) const override {
     // If there are further tokens available in the input then Shift.
-    if (!state.EndOfInput()) return ShiftAction();
+    //if (!state.EndOfInput()) return ShiftAction();
 
     // Do a "reduce".
     return RightArcAction(2);
@@ -142,54 +146,60 @@ class ArcStandardTransitionSystem : public ParserTransitionSystem {
   // Returns the next gold action for a given state according to the
   // underlying annotated sentence.
   ParserAction GetNextGoldAction(const ParserState &state) const override {
-    // If the stack contains less than 2 tokens, the only valid parser action is
-    // shift.
-    if (state.StackSize() < 2) {
-      DCHECK(!state.EndOfInput());
-      return ShiftAction();
-    }
+    //longest right arc if possible
+    //shortest left arc if possible
+    //shift else
+    return ShiftAction(0);
 
-    // If the second token on the stack is the head of the first one,
-    // return a right arc action.
-    if (state.GoldHead(state.Stack(0)) == state.Stack(1) &&
-        DoneChildrenRightOf(state, state.Stack(0))) {
-      const int gold_label = state.GoldLabel(state.Stack(0));
-      return RightArcAction(gold_label);
-    }
 
-    // If the first token on the stack is the head of the second one,
-    // return a left arc action.
-    if (state.GoldHead(state.Stack(1)) == state.Top()) {
-      const int gold_label = state.GoldLabel(state.Stack(1));
-      return LeftArcAction(gold_label);
-    }
+    //// If the stack contains less than 2 tokens, the only valid parser action is
+    //// shift.
+    //if (state.StackSize() < 2) {
+      ////DCHECK(!state.EndOfInput());
+      //return ShiftAction(0);
+    //}
+
+    //// If the second token on the stack is the head of the first one,
+    //// return a right arc action.
+    //if (state.GoldHead(state.Stack(0)) == state.Stack(1) &&
+        //DoneChildrenRightOf(state, state.Stack(0))) {
+      //const int gold_label = state.GoldLabel(state.Stack(0));
+      //return RightArcAction(gold_label);
+    //}
+
+    //// If the first token on the stack is the head of the second one,
+    //// return a left arc action.
+    //if (state.GoldHead(state.Stack(1)) == state.Top()) {
+      //const int gold_label = state.GoldLabel(state.Stack(1));
+      //return LeftArcAction(gold_label);
+    //}
 
     // Otherwise, shift.
-    return ShiftAction();
+    return ShiftAction(0);
   }
 
-  // Determines if a token has any children to the right in the sentence.
-  // Arc standard is a bottom-up parsing method and has to finish all sub-trees
-  // first.
-  static bool DoneChildrenRightOf(const ParserState &state, int head) {
-    int index = state.Next();
-    int num_tokens = state.sentence().token_size();
-    while (index < num_tokens) {
-      // Check if the token at index is the child of head.
-      int actual_head = state.GoldHead(index);
-      if (actual_head == head) return false;
+  //// Determines if a token has any children to the right in the sentence.
+  //// Arc standard is a bottom-up parsing method and has to finish all sub-trees
+  //// first.
+  //static bool DoneChildrenRightOf(const ParserState &state, int head) {
+    //int index = state.Next();
+    //int num_tokens = state.sentence().token_size();
+    //while (index < num_tokens) {
+      //// Check if the token at index is the child of head.
+      //int actual_head = state.GoldHead(index);
+      //if (actual_head == head) return false;
 
-      // If the head of the token at index is to the right of it there cannot be
-      // any children in-between, so we can skip forward to the head.  Note this
-      // is only true for projective trees.
-      if (actual_head > index) {
-        index = actual_head;
-      } else {
-        ++index;
-      }
-    }
-    return true;
-  }
+      //// If the head of the token at index is to the right of it there cannot be
+      //// any children in-between, so we can skip forward to the head.  Note this
+      //// is only true for projective trees.
+      //if (actual_head > index) {
+        //index = actual_head;
+      //} else {
+        //++index;
+      //}
+    //}
+    //return true;
+  //}
 
   // Checks if the action is allowed in a given parser state.
   bool IsAllowedAction(ParserAction action,
@@ -209,20 +219,20 @@ class ArcStandardTransitionSystem : public ParserTransitionSystem {
   // Returns true if a shift is allowed in the given parser state.
   bool IsAllowedShift(const ParserState &state) const {
     // We can shift if there are more input tokens.
-    return !state.EndOfInput();
+    return !state.StackEmpty();
   }
 
   // Returns true if a left-arc is allowed in the given parser state.
   bool IsAllowedLeftArc(const ParserState &state) const {
     // Left-arc requires two or more tokens on the stack but the first token
     // is the root an we do not want and left arc to the root.
-    return state.StackSize() > 2;
+    return !state.StackEmpty();
   }
 
   // Returns true if a right-arc is allowed in the given parser state.
   bool IsAllowedRightArc(const ParserState &state) const {
     // Right arc requires three or more tokens on the stack.
-    return state.StackSize() > 1;
+    return !state.StackEmpty();
   }
 
   // Performs the specified action on a given parser state, without adding the
@@ -231,7 +241,7 @@ class ArcStandardTransitionSystem : public ParserTransitionSystem {
                                    ParserState *state) const override {
     switch (ActionType(action)) {
       case SHIFT:
-        PerformShift(state);
+        PerformShift(state, Label(action));
         break;
       case LEFT_ARC:
         PerformLeftArc(state, Label(action));
@@ -244,40 +254,43 @@ class ArcStandardTransitionSystem : public ParserTransitionSystem {
 
   // Makes a shift by pushing the next input token on the stack and moving to
   // the next position.
-  void PerformShift(ParserState *state) const {
+  void PerformShift(ParserState *state, int word) const {
     DCHECK(IsAllowedShift(*state));
-    state->Push(state->Next());
-    state->Advance();
+    state->words_.push_back(word);
+    state->stack_--;
   }
 
   // Makes a left-arc between the two top tokens on stack and pops the second
   // token on stack.
   void PerformLeftArc(ParserState *state, int label) const {
     DCHECK(IsAllowedLeftArc(*state));
-    int s0 = state->Pop();
-    state->AddArc(state->Pop(), s0, label);
-    state->Push(s0);
+    int head = state->head_.at(state->stack_);
+    state->label_.insert(state->label_.begin() + state->stack_, label);
+    state->head_.insert(state->head_.begin() + state->stack_, head);
+    state->stack_++;
   }
 
   // Makes a right-arc between the two top tokens on stack and pops the stack.
   void PerformRightArc(ParserState *state, int label) const {
     DCHECK(IsAllowedRightArc(*state));
-    int s0 = state->Pop();
-    int s1 = state->Pop();
-    state->AddArc(s0, s1, label);
-    state->Push(s1);
+    int head = state->head_.at(state->stack_);
+    state->stack_++;
+    state->label_.insert(state->label_.begin() + state->stack_, label);
+    state->head_.insert(state->head_.begin() + state->stack_, head);
   }
 
   // We are in a deterministic state when we either reached the end of the input
   // or reduced everything from the stack.
   bool IsDeterministicState(const ParserState &state) const override {
-    return state.StackSize() < 2 && !state.EndOfInput();
+    return state.StackSize() < 1;
+    //return state.StackSize() < 2 && !state.EndOfInput();
   }
 
   // We are in a final state when we reached the end of the input and the stack
   // is empty.
   bool IsFinalState(const ParserState &state) const override {
-    return state.EndOfInput() && state.StackSize() < 2;
+    //return state.EndOfInput() && state.StackSize() < 2;
+    return state.StackSize() < 1;
   }
 
   // Returns a string representation of a parser action.
@@ -285,7 +298,7 @@ class ArcStandardTransitionSystem : public ParserTransitionSystem {
                         const ParserState &state) const override {
     switch (ActionType(action)) {
       case SHIFT:
-        return "SHIFT";
+        return "SHIFT(" + std::to_string(action) + ")";
       case LEFT_ARC:
         return "LEFT_ARC(" + state.LabelAsString(Label(action)) + ")";
       case RIGHT_ARC:
@@ -303,35 +316,36 @@ class ArcStandardTransitionSystem : public ParserTransitionSystem {
   // to positions in the input sentence.
   bool SupportsActionMetaData() const override { return true; }
 
-  // Returns the child of a new arc for reduce actions.
-  int ChildIndex(const ParserState &state,
-                 const ParserAction &action) const override {
-    switch (ActionType(action)) {
-      case SHIFT:
-        return -1;
-      case LEFT_ARC:  // left arc pops stack(1)
-        return state.Stack(1);
-      case RIGHT_ARC:
-        return state.Stack(0);
-      default:
-        LOG(FATAL) << "Invalid parser action: " << action;
-    }
-  }
+  //// Returns the child of a new arc for reduce actions.
+  //int ChildIndex(const ParserState &state,
+                 //const ParserAction &action) const override {
+    //switch (ActionType(action)) {
+      //case SHIFT:
+        //return -1;
+      //case LEFT_ARC:  // left arc pops stack(1)
+        //return state.Stack(1);
+      //case RIGHT_ARC:
+        //return state.Stack(0);
+      //default:
+        //LOG(FATAL) << "Invalid parser action: " << action;
+    //}
+  //}
 
-  // Returns the parent of a new arc for reduce actions.
-  int ParentIndex(const ParserState &state,
-                  const ParserAction &action) const override {
-    switch (ActionType(action)) {
-      case SHIFT:
-        return -1;
-      case LEFT_ARC:  // left arc pops stack(1)
-        return state.Stack(0);
-      case RIGHT_ARC:
-        return state.Stack(1);
-      default:
-        LOG(FATAL) << "Invalid parser action: " << action;
-    }
-  }
+  //// Returns the parent of a new arc for reduce actions.
+  //int ParentIndex(const ParserState &state,
+                  //const ParserAction &action) const override {
+    //switch (ActionType(action)) {
+      //case SHIFT:
+        //return -1;
+      //case LEFT_ARC:  // left arc pops stack(1)
+        //return state.Stack(0);
+      //case RIGHT_ARC:
+        //return state.Stack(1);
+      //default:
+        //LOG(FATAL) << "Invalid parser action: " << action;
+    //}
+  //}
+
 };
 
 REGISTER_TRANSITION_SYSTEM("arc-standard", ArcStandardTransitionSystem);

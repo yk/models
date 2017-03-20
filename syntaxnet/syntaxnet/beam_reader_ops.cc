@@ -262,6 +262,8 @@ class BeamState {
 
   // Label map.
   const TermFrequencyMap *label_map_ = nullptr;
+  const TermFrequencyMap *word_map_ = nullptr;
+  const TermFrequencyMap *tag_map_ = nullptr;
 
   // Transition system.
   const ParserTransitionSystem *transition_system_ = nullptr;
@@ -285,7 +287,7 @@ class BeamState {
     if (sentence_batch_->AdvanceSentence(beam_id_)) {
       gold_.reset(new ParserState(sentence_batch_->sentence(beam_id_),
                                   transition_system_->NewTransitionState(true),
-                                  label_map_));
+                                  label_map_, word_map_, tag_map_));
       workspace_->Reset(*workspace_registry_);
       features_->Preprocess(workspace_, gold_.get());
     }
@@ -371,7 +373,11 @@ class BatchState {
   explicit BatchState(const BatchStateOptions &options)
       : options_(options), features_(options.arg_prefix) {}
 
-  ~BatchState() { SharedStore::Release(label_map_); }
+  ~BatchState() {
+      SharedStore::Release(label_map_);
+      SharedStore::Release(word_map_);
+      SharedStore::Release(tag_map_);
+  }
 
   void Init(TaskContext *task_context) {
     // Create sentence batch.
@@ -392,6 +398,16 @@ class BatchState {
     label_map_ = SharedStoreUtils::GetWithDefaultName<TermFrequencyMap>(
         label_map_path, 0, 0);
 
+    string word_map_path =
+        TaskContext::InputFile(*task_context->GetInput("word-map"));
+    word_map_ = SharedStoreUtils::GetWithDefaultName<TermFrequencyMap>(
+        word_map_path, 0, 0);
+
+    string tag_map_path =
+        TaskContext::InputFile(*task_context->GetInput("tag-map"));
+    tag_map_ = SharedStoreUtils::GetWithDefaultName<TermFrequencyMap>(
+        tag_map_path, 0, 0);
+
     // Setup features.
     features_.Setup(task_context);
     features_.Init(task_context);
@@ -408,6 +424,8 @@ class BatchState {
       beams_[beam_id].sentence_batch_ = sentence_batch_.get();
       beams_[beam_id].transition_system_ = transition_system_.get();
       beams_[beam_id].label_map_ = label_map_;
+      beams_[beam_id].word_map_ = word_map_;
+      beams_[beam_id].tag_map_ = tag_map_;
       beams_[beam_id].features_ = &features_;
       beams_[beam_id].workspace_ = &workspaces_[beam_id];
       beams_[beam_id].workspace_registry_ = &workspace_registry_;
@@ -506,7 +524,7 @@ class BatchState {
   int FeatureSize() const { return features_.embedding_dims().size(); }
 
   int NumActions() const {
-    return transition_system_->NumActions(label_map_->Size());
+    return transition_system_->NumActions(word_map_->Size(), label_map_->Size());
   }
 
   int BatchSize() const { return options_.batch_size; }
@@ -531,6 +549,8 @@ class BatchState {
 
   // Label map for transition system..
   const TermFrequencyMap *label_map_;
+  const TermFrequencyMap *word_map_;
+  const TermFrequencyMap *tag_map_;
 
   // Typed feature extractor for embeddings.
   ParserEmbeddingFeatureExtractor features_;

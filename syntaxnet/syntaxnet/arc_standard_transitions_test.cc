@@ -41,9 +41,17 @@ class ArcStandardTransitionTest : public ::testing::Test {
   // document and initializes the transition system appropriately.
   void SetUpForDocument(const Sentence &document) {
     input_label_map_ = context_.GetInput("label-map", "text", "");
+    input_word_map_ = context_.GetInput("word-map", "text", "");
+    input_tag_map_ = context_.GetInput("tag-map", "text", "");
     transition_system_->Setup(&context_);
     PopulateTestInputs::Defaults(document).Populate(&context_);
     label_map_.Load(TaskContext::InputFile(*input_label_map_),
+                    0 /* minimum frequency */,
+                    -1 /* maximum number of terms */);
+    word_map_.Load(TaskContext::InputFile(*input_word_map_),
+                    0 /* minimum frequency */,
+                    -1 /* maximum number of terms */);
+    tag_map_.Load(TaskContext::InputFile(*input_tag_map_),
                     0 /* minimum frequency */,
                     -1 /* maximum number of terms */);
     transition_system_->Init(&context_);
@@ -54,7 +62,7 @@ class ArcStandardTransitionTest : public ::testing::Test {
   ParserState *NewClonedState(Sentence *sentence) {
     ParserState state(sentence, transition_system_->NewTransitionState(
                                     true /* training mode */),
-                      &label_map_);
+                      &label_map_, &word_map_, &tag_map_);
     return state.Clone();
   }
 
@@ -96,7 +104,11 @@ class ArcStandardTransitionTest : public ::testing::Test {
 
   TaskContext context_;
   TaskInput *input_label_map_ = nullptr;
+  TaskInput *input_word_map_ = nullptr;
+  TaskInput *input_tag_map_ = nullptr;
   TermFrequencyMap label_map_;
+  TermFrequencyMap word_map_;
+  TermFrequencyMap tag_map_;
   std::unique_ptr<ParserTransitionSystem> transition_system_;
 };
 

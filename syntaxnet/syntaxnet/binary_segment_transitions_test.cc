@@ -120,7 +120,7 @@ class SegmentationTransitionTest : public ::testing::Test {
 TEST_F(SegmentationTransitionTest, GoldNextActionTest) {
   BinarySegmentState *segment_state = static_cast<BinarySegmentState *>(
       transition_system_->NewTransitionState(true));
-  ParserState state(sentence_.get(), segment_state, &label_map_);
+  ParserState state(sentence_.get(), segment_state, &label_map_, nullptr, nullptr);
 
   // Do segmentation by following the gold actions.
   while (transition_system_->IsFinalState(state) == false) {
@@ -150,7 +150,7 @@ TEST_F(SegmentationTransitionTest, GoldNextActionTest) {
 TEST_F(SegmentationTransitionTest, DefaultActionTest) {
   BinarySegmentState *segment_state = static_cast<BinarySegmentState *>(
       transition_system_->NewTransitionState(true));
-  ParserState state(sentence_.get(), segment_state, &label_map_);
+  ParserState state(sentence_.get(), segment_state, &label_map_, nullptr, nullptr);
 
   // Do segmentation, tagging and parsing by following the gold actions.
   while (transition_system_->IsFinalState(state) == false) {
@@ -178,7 +178,7 @@ TEST_F(SegmentationTransitionTest, LastWordFeatureTest) {
   // Prepare a parser state.
   BinarySegmentState *segment_state = new BinarySegmentState();
   auto state = std::unique_ptr<ParserState>(new ParserState(
-      sentence_.get(), segment_state, &label_map_));
+      sentence_.get(), segment_state, &label_map_, nullptr, nullptr));
 
   // Test initial state which contains no words.
   PrepareFeature("last-word(1,min-freq=2)", state.get());

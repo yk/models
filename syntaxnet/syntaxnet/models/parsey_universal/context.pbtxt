@@ -524,3 +524,106 @@ input {
     file_pattern: '/local/home/ykilcher/tmp/fr-en.inv.en.parse'
   }
 }
+
+input {
+  name: 'nc-mrg-fr-en'
+  record_format: 'conll-sentence'
+  Part {
+    file_pattern: '/Users/yk/tmp/fr-en.fr.en.mrg'
+  }
+}
+
+input {
+  name: 'nc-mrg-en-fr'
+  record_format: 'conll-sentence'
+  Part {
+    file_pattern: '/local/home/ykilcher/tmp/fr-en.en.fr.mrg'
+  }
+}
+Parameter {
+  name: "brain_translator_embedding_dims"
+  value: "32;32;32;64"
+}
+Parameter {
+  name: "brain_translator_embedding_names"
+  value: "labels;morphology;tags;words"
+}
+Parameter {
+  name: "brain_translator_features"
+  value: "stack.child(1).label "
+         "stack.child(1).sibling(-1).label "
+         "stack.child(-1).label "
+         "stack.child(-1).sibling(1).label "
+         "stack.child(2).label "
+         "stack.child(-2).label "
+         "stack(1).child(1).label "
+         "stack(1).child(1).sibling(-1).label "
+         "stack(1).child(-1).label "
+         "stack(1).child(-1).sibling(1).label "
+         "stack(1).child(2).label "
+         "stack(1).child(-2).label; "
+         "input.token.morphology-set "
+         "input(1).token.morphology-set "
+         "input(2).token.morphology-set "
+         "input(3).token.morphology-set "
+         "stack.token.morphology-set "
+         "stack.child(1).token.morphology-set "
+         "stack.child(1).sibling(-1).token.morphology-set "
+         "stack.child(-1).token.morphology-set "
+         "stack.child(-1).sibling(1).token.morphology-set "
+         "stack.child(2).token.morphology-set "
+         "stack.child(-2).token.morphology-set "
+         "stack(1).token.morphology-set "
+         "stack(1).child(1).token.morphology-set "
+         "stack(1).child(1).sibling(-1).token.morphology-set "
+         "stack(1).child(-1).token.morphology-set "
+         "stack(1).child(-1).sibling(1).token.morphology-set "
+         "stack(1).child(2).token.morphology-set "
+         "stack(1).child(-2).token.morphology-set "
+         "stack(2).token.morphology-set "
+         "stack(3).token.morphology-set; "
+         "input.token.tag "
+         "input(1).token.tag "
+         "input(2).token.tag "
+         "input(3).token.tag "
+         "stack.token.tag "
+         "stack.child(1).token.tag "
+         "stack.child(1).sibling(-1).token.tag "
+         "stack.child(-1).token.tag "
+         "stack.child(-1).sibling(1).token.tag "
+         "stack.child(2).token.tag "
+         "stack.child(-2).token.tag "
+         "stack(1).token.tag "
+         "stack(1).child(1).token.tag "
+         "stack(1).child(1).sibling(-1).token.tag "
+         "stack(1).child(-1).token.tag "
+         "stack(1).child(-1).sibling(1).token.tag "
+         "stack(1).child(2).token.tag "
+         "stack(1).child(-2).token.tag "
+         "stack(2).token.tag "
+         "stack(3).token.tag; "
+         "input.token.word "
+         "input(1).token.word "
+         "input(2).token.word "
+         "input(3).token.word "
+         "stack.token.word "
+         "stack.child(1).token.word "
+         "stack.child(1).sibling(-1).token.word "
+         "stack.child(-1).token.word "
+         "stack.child(-1).sibling(1).token.word "
+         "stack.child(2).token.word "
+         "stack.child(-2).token.word "
+         "stack(1).token.word "
+         "stack(1).child(1).token.word "
+         "stack(1).child(1).sibling(-1).token.word "
+         "stack(1).child(-1).token.word "
+         "stack(1).child(-1).sibling(1).token.word "
+         "stack(1).child(2).token.word "
+         "stack(1).child(-2).token.word "
+         "stack(2).token.word "
+         "stack(3).token.word "
+}
+Parameter {
+  name: "brain_translator_transition_system"
+  value: "arc-standard"
+}

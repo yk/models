@@ -53,7 +53,10 @@ class ParserState {
   // and string representations of the labels.
   ParserState(Sentence *sentence,
               ParserTransitionState *transition_state,
-              const TermFrequencyMap *label_map);
+              const TermFrequencyMap *label_map,
+              const TermFrequencyMap *word_map,
+              const TermFrequencyMap *tag_map
+              );
 
   // Deletes the parser state.
   ~ParserState();
@@ -63,31 +66,10 @@ class ParserState {
 
   // Returns the root label.
   int RootLabel() const;
-
-  // Returns the index of the next input token.
-  int Next() const;
-
   // Returns the number of tokens in the sentence.
-  int NumTokens() const { return num_tokens_; }
-
-  // Returns the token index relative to the next input token. If no such token
-  // exists, returns -2.
-  int Input(int offset) const;
-
-  // Advances to the next input token.
-  void Advance();
-
-  // Returns true if all tokens have been processed.
-  bool EndOfInput() const;
-
-  // Pushes an element to the stack.
-  void Push(int index);
-
-  // Pops the top element from stack and returns it.
-  int Pop();
-
-  // Returns the element from the top of the stack.
-  int Top() const;
+  int NumTokens() const { return words_.size(); }
+  int Word(int position) const;
+  int GoldWord(int position) const;
 
   // Returns the element at a certain position in the stack. Stack(0) is the top
   // stack element. If no such position exists, returns -2.
@@ -179,6 +161,21 @@ class ParserState {
   bool is_gold() const { return is_gold_; }
   void set_is_gold(bool is_gold) { is_gold_ = is_gold; }
 
+
+  // Parse stack of partially processed tokens.
+  int stack_ = -1;
+
+  // List of head positions for the (partial) dependency tree.
+  std::vector<int> head_;
+
+  // List of dependency relation labels describing the (partial) dependency
+  // tree.
+  std::vector<int> label_;
+
+  std::vector<int> words_;
+
+  std::vector<int> tags_;
+
  private:
   // Empty constructor used for the cloning operation.
   ParserState() {}
@@ -188,9 +185,6 @@ class ParserState {
 
   // Sentence to parse. Not owned.
   Sentence *sentence_ = nullptr;
-
-  // Number of tokens in the sentence to parse.
-  int num_tokens_;
 
   // Which alternative token analysis is used for tag/category/head/label
   // information. -1 means use default.
@@ -202,22 +196,11 @@ class ParserState {
   // Label map used for conversions between integer and string representations
   // of the dependency labels. Not owned.
   const TermFrequencyMap *label_map_ = nullptr;
+  const TermFrequencyMap *word_map_ = nullptr;
+  const TermFrequencyMap *tag_map_ = nullptr;
 
   // Root label.
   int root_label_;
-
-  // Index of the next input token.
-  int next_;
-
-  // Parse stack of partially processed tokens.
-  std::vector<int> stack_;
-
-  // List of head positions for the (partial) dependency tree.
-  std::vector<int> head_;
-
-  // List of dependency relation labels describing the (partial) dependency
-  // tree.
-  std::vector<int> label_;
 
   // Score of the parser state.
   double score_ = 0.0;

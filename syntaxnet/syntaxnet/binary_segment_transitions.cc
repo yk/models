@@ -58,7 +58,7 @@ class BinarySegmentTransitionSystem : public ParserTransitionSystem {
   }
 
   // Returns the number of possible actions.
-  int NumActions(int num_labels) const override {
+  int NumActions(int num_words, int num_labels) const override {
     return CARDINAL;
   }
 
