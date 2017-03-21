@@ -109,36 +109,36 @@ class ParserFeatureFunctionTest : public ::testing::Test {
   std::unique_ptr<ParserFeatureExtractor> feature_extractor_;
 };
 
-TEST_F(ParserFeatureFunctionTest, TagFeatureFunction) {
-  state_->Push(-1);
-  state_->Push(0);
-  EXPECT_EQ("PRP", ExtractFeature("input.tag"));
-  EXPECT_EQ("VBD", ExtractFeature("input(1).tag"));
-  EXPECT_EQ("<OUTSIDE>", ExtractFeature("input(10).tag"));
-  EXPECT_EQ("PRP", ExtractFeature("stack(0).tag"));
-  EXPECT_EQ("<ROOT>", ExtractFeature("stack(1).tag"));
-}
+//TEST_F(ParserFeatureFunctionTest, TagFeatureFunction) {
+  //state_->Push(-1);
+  //state_->Push(0);
+  //EXPECT_EQ("PRP", ExtractFeature("input.tag"));
+  //EXPECT_EQ("VBD", ExtractFeature("input(1).tag"));
+  //EXPECT_EQ("<OUTSIDE>", ExtractFeature("input(10).tag"));
+  //EXPECT_EQ("PRP", ExtractFeature("stack(0).tag"));
+  //EXPECT_EQ("<ROOT>", ExtractFeature("stack(1).tag"));
+//}
 
-TEST_F(ParserFeatureFunctionTest, LabelFeatureFunction) {
-  // Construct a partial dependency tree.
-  state_->AddArc(0, 1, 4);
-  state_->AddArc(1, -1, 1);
-  state_->AddArc(2, 3, 2);
-  state_->AddArc(3, 1, 3);
-  state_->AddArc(5, 6, 2);
-  state_->AddArc(6, 4, 6);
-  state_->AddArc(7, 1, 5);
+//TEST_F(ParserFeatureFunctionTest, LabelFeatureFunction) {
+  //// Construct a partial dependency tree.
+  //state_->AddArc(0, 1, 4);
+  //state_->AddArc(1, -1, 1);
+  //state_->AddArc(2, 3, 2);
+  //state_->AddArc(3, 1, 3);
+  //state_->AddArc(5, 6, 2);
+  //state_->AddArc(6, 4, 6);
+  //state_->AddArc(7, 1, 5);
 
-  // Test the feature function.
-  EXPECT_EQ(label_map_.GetTerm(4), ExtractFeature("input.label"));
-  EXPECT_EQ("ROOT", ExtractFeature("input(1).label"));
-  EXPECT_EQ(label_map_.GetTerm(2), ExtractFeature("input(2).label"));
+  //// Test the feature function.
+  //EXPECT_EQ(label_map_.GetTerm(4), ExtractFeature("input.label"));
+  //EXPECT_EQ("ROOT", ExtractFeature("input(1).label"));
+  //EXPECT_EQ(label_map_.GetTerm(2), ExtractFeature("input(2).label"));
 
-  // Push artifical root token onto the stack. This triggers the wrapped <ROOT>
-  // value, rather than indicating a token with the label "ROOT" (which may or
-  // may not be the artificial root token.)
-  state_->Push(-1);
-  EXPECT_EQ("<ROOT>", ExtractFeature("stack.label"));
-}
+  //// Push artifical root token onto the stack. This triggers the wrapped <ROOT>
+  //// value, rather than indicating a token with the label "ROOT" (which may or
+  //// may not be the artificial root token.)
+  //state_->Push(-1);
+  //EXPECT_EQ("<ROOT>", ExtractFeature("stack.label"));
+//}
 
 }  // namespace syntaxnet

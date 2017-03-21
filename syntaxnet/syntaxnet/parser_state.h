@@ -71,8 +71,6 @@ class ParserState {
   int Word(int position) const;
   int GoldWord(int position) const;
 
-  // Returns the element at a certain position in the stack. Stack(0) is the top
-  // stack element. If no such position exists, returns -2.
   int Stack(int position) const;
 
   // Returns the number of elements on the stack.

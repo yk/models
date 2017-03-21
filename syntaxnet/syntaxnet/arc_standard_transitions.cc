@@ -34,6 +34,7 @@ limitations under the License.
 #include "syntaxnet/parser_transitions.h"
 #include "syntaxnet/utils.h"
 #include "tensorflow/core/lib/strings/strcat.h"
+#include <iostream>
 
 namespace syntaxnet {
 
@@ -56,7 +57,7 @@ class ArcStandardTransitionState : public ParserTransitionState {
                           Sentence *sentence) const override {
     sentence->clear_token();
     for (int i = 0; i < state.NumTokens(); ++i) {
-      Token *token = sentence->mutable_token(i);
+      Token *token = sentence->add_token();
       token->set_word(std::to_string(state.words_.at(i)));
       token->set_label(state.LabelAsString(state.Label(i)));
       if (state.Head(i) != -1) {

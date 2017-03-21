@@ -295,16 +295,11 @@ cc_library(
     name = "parser_transitions",
     srcs = [
         "arc_standard_transitions.cc",
-        "binary_segment_state.cc",
-        "binary_segment_transitions.cc",
-        "morpher_transitions.cc",
         "parser_features.cc",
         "parser_state.cc",
         "parser_transitions.cc",
-        "tagger_transitions.cc",
     ],
     hdrs = [
-        "binary_segment_state.h",
         "parser_features.h",
         "parser_state.h",
         "parser_transitions.h",
@@ -471,18 +466,6 @@ filegroup(
 )
 
 cc_test(
-    name = "binary_segment_state_test",
-    size = "small",
-    srcs = ["binary_segment_state_test.cc"],
-    deps = [
-        ":base",
-        ":parser_transitions",
-        ":term_frequency_map",
-        ":test_main",
-    ],
-)
-
-cc_test(
     name = "shared_store_test",
     size = "small",
     srcs = ["shared_store_test.cc"],
@@ -553,33 +536,6 @@ cc_test(
 )
 
 cc_test(
-    name = "binary_segment_transitions_test",
-    size = "small",
-    srcs = ["binary_segment_transitions_test.cc"],
-    deps = [
-        ":parser_transitions",
-        ":sentence_proto",
-        ":task_context",
-        ":test_main",
-        ":workspace",
-    ],
-)
-
-cc_test(
-    name = "tagger_transitions_test",
-    size = "small",
-    srcs = ["tagger_transitions_test.cc"],
-    data = [":testdata"],
-    deps = [
-        ":parser_transitions",
-        ":populate_test_inputs",
-        ":sentence_proto",
-        ":task_spec_proto",
-        ":test_main",
-    ],
-)
-
-cc_test(
     name = "parser_features_test",
     size = "small",
     srcs = ["parser_features_test.cc"],
@@ -638,6 +594,7 @@ py_binary(
     deps = [
         ":graph_builder",
         ":structured_graph_builder",
+        ":sentence_py_pb2",
         ":task_spec_py_pb2",
     ],
 )

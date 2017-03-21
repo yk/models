@@ -278,6 +278,18 @@ input {
   }
 }
 input {
+  name: "category-map"
+  Part {
+    file_pattern: "category-map"
+  }
+}
+input {
+  name: "lcword-map"
+  Part {
+    file_pattern: "lcword-map"
+  }
+}
+input {
   name: "char-map"
   Part {
     file_pattern: "char-map"
@@ -532,6 +544,22 @@ input {
     file_pattern: '/Users/yk/tmp/fr-en.fr.en.mrg'
   }
 }
+input {
+  name: 'nc-mrg-fr-en-train'
+  record_format: 'conll-sentence'
+  Part {
+    file_pattern: '/Users/yk/tmp/fr-en.fr.en.mrg.train'
+  }
+}
+input {
+  name: 'nc-mrg-fr-en-dev'
+  record_format: 'conll-sentence'
+  Part {
+    file_pattern: '/Users/yk/tmp/fr-en.fr.en.mrg.dev'
+  }
+}
+
+
 
 input {
   name: 'nc-mrg-en-fr'
@@ -562,10 +590,6 @@ Parameter {
          "stack(1).child(-1).sibling(1).label "
          "stack(1).child(2).label "
          "stack(1).child(-2).label; "
-         "input.token.morphology-set "
-         "input(1).token.morphology-set "
-         "input(2).token.morphology-set "
-         "input(3).token.morphology-set "
          "stack.token.morphology-set "
          "stack.child(1).token.morphology-set "
          "stack.child(1).sibling(-1).token.morphology-set "
@@ -582,10 +606,6 @@ Parameter {
          "stack(1).child(-2).token.morphology-set "
          "stack(2).token.morphology-set "
          "stack(3).token.morphology-set; "
-         "input.token.tag "
-         "input(1).token.tag "
-         "input(2).token.tag "
-         "input(3).token.tag "
          "stack.token.tag "
          "stack.child(1).token.tag "
          "stack.child(1).sibling(-1).token.tag "
@@ -602,10 +622,6 @@ Parameter {
          "stack(1).child(-2).token.tag "
          "stack(2).token.tag "
          "stack(3).token.tag; "
-         "input.token.word "
-         "input(1).token.word "
-         "input(2).token.word "
-         "input(3).token.word "
          "stack.token.word "
          "stack.child(1).token.word "
          "stack.child(1).sibling(-1).token.word "

@@ -187,3 +187,76 @@ input {
     file_pattern: '-'
   }
 }
+Parameter {
+  name: "brain_translator_embedding_dims"
+  value: "32;32;64"
+}
+Parameter {
+  name: "brain_translator_embedding_names"
+  value: "labels;tags;words"
+}
+Parameter {
+  name: 'brain_translator_scoring'
+  value: 'default'
+}
+Parameter {
+  name: "brain_translator_features"
+  value:
+  'stack.child(1).label '
+  'stack.child(1).sibling(-1).label '
+  'stack.child(-1).label '
+  'stack.child(-1).sibling(1).label '
+  'stack.child(2).label '
+  'stack.child(-2).label '
+  'stack(1).child(1).label '
+  'stack(1).child(1).sibling(-1).label '
+  'stack(1).child(-1).label '
+  'stack(1).child(-1).sibling(1).label '
+  'stack(1).child(2).label '
+  'stack(1).child(-2).label; '
+  'input.token.tag '
+  'input(1).token.tag '
+  'input(2).token.tag '
+  'input(3).token.tag '
+  'stack.token.tag '
+  'stack.child(1).token.tag '
+  'stack.child(1).sibling(-1).token.tag '
+  'stack.child(-1).token.tag '
+  'stack.child(-1).sibling(1).token.tag '
+  'stack.child(2).token.tag '
+  'stack.child(-2).token.tag '
+  'stack(1).token.tag '
+  'stack(1).child(1).token.tag '
+  'stack(1).child(1).sibling(-1).token.tag '
+  'stack(1).child(-1).token.tag '
+  'stack(1).child(-1).sibling(1).token.tag '
+  'stack(1).child(2).token.tag '
+  'stack(1).child(-2).token.tag '
+  'stack(2).token.tag '
+  'stack(3).token.tag; '
+  'input.token.word '
+  'input(1).token.word '
+  'input(2).token.word '
+  'input(3).token.word '
+  'stack.token.word '
+  'stack.child(1).token.word '
+  'stack.child(1).sibling(-1).token.word '
+  'stack.child(-1).token.word '
+  'stack.child(-1).sibling(1).token.word '
+  'stack.child(2).token.word '
+  'stack.child(-2).token.word '
+  'stack(1).token.word '
+  'stack(1).child(1).token.word '
+  'stack(1).child(1).sibling(-1).token.word '
+  'stack(1).child(-1).token.word '
+  'stack(1).child(-1).sibling(1).token.word '
+  'stack(1).child(2).token.word '
+  'stack(1).child(-2).token.word '
+  'stack(2).token.word '
+  'stack(3).token.word '
+}
+Parameter {
+  name: "brain_translator_transition_system"
+  value: "arc-standard"
+}
+

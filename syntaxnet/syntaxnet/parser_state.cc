@@ -83,6 +83,11 @@ int ParserState::StackSize() const { return stack_ + 1; }
 
 bool ParserState::StackEmpty() const { return stack_ < 0; }
 
+int ParserState::Stack(int position) const {
+  return stack_ - position;
+}
+
+
 int ParserState::Head(int index) const {
   DCHECK_GE(index, -1);
   DCHECK_LT(index, head_.size());

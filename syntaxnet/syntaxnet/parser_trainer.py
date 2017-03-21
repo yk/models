@@ -31,6 +31,7 @@ from syntaxnet import graph_builder
 from syntaxnet import structured_graph_builder
 from syntaxnet.ops import gen_parser_ops
 from syntaxnet import task_spec_pb2
+from syntaxnet import sentence_pb2
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -134,9 +135,21 @@ def Eval(sess, parser, num_steps, best_eval_metric):
   num_tokens = 0
   num_correct = 0
   while True:
-    tf_eval_epochs, tf_eval_metrics = sess.run([
-        parser.evaluation['epochs'], parser.evaluation['eval_metrics']
+
+    # tf_eval_epochs, tf_eval_metrics = sess.run([
+        # parser.evaluation['epochs'], parser.evaluation['eval_metrics']
+    # ])
+
+    tf_eval_epochs, tf_eval_metrics, tf_documents = sess.run([
+        parser.evaluation['epochs'], parser.evaluation['eval_metrics'],
+        parser.evaluation['documents']
     ])
+    for docs in tf_documents:
+        doc = sentence_pb2.Sentence()
+        doc.ParseFromString(docs)
+        for token in doc.token:
+            print(token)
+
     num_tokens += tf_eval_metrics[0]
     num_correct += tf_eval_metrics[1]
     if num_epochs is None:

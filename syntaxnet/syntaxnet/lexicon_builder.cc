@@ -77,6 +77,7 @@ class LexiconBuilder : public OpKernel {
     TermFrequencyMap categories;
     TermFrequencyMap labels;
     TermFrequencyMap chars;
+    TermFrequencyMap morphs;
 
     // Affix tables to be populated by the corpus.
     AffixTable prefixes(AffixTable::PREFIX, max_prefix_length_);
@@ -92,9 +93,9 @@ class LexiconBuilder : public OpKernel {
     TextReader corpus(*task_context_.GetInput(corpus_name_), &task_context_);
     while ((document = corpus.Read()) != nullptr) {
       // Gather token information.
-      for (int t = 0; t < document->token_size(); ++t) {
+      for (int t = 0; t < document->target().token_size(); ++t) {
         // Get token and lowercased word.
-        const Token &token = document->token(t);
+        auto &token = document->target().token(t);
         string word = token.word();
         utils::NormalizeDigits(&word);
         string lcword = tensorflow::str_util::Lowercase(word);
@@ -108,6 +109,14 @@ class LexiconBuilder : public OpKernel {
         if (!token.tag().empty()) tags.Increment(token.tag());
         if (!token.category().empty()) categories.Increment(token.category());
         if (!token.label().empty()) labels.Increment(token.label());
+
+        if(token.HasExtension(TokenMorphology::morphology)){
+            auto& morph = token.GetExtension(TokenMorphology::morphology);
+            for(int m=0; m < morph.attribute_size(); m++){
+                auto& attr = morph.attribute(m);
+                morphs.Increment(attr.name());
+            }
+        }
 
         // Add prefixes/suffixes for the current word.
         prefixes.AddAffixesForWord(word.c_str(), word.size());
@@ -142,6 +151,7 @@ class LexiconBuilder : public OpKernel {
         TaskContext::InputFile(*task_context_.GetInput("category-map")));
     labels.Save(TaskContext::InputFile(*task_context_.GetInput("label-map")));
     chars.Save(TaskContext::InputFile(*task_context_.GetInput("char-map")));
+    morphs.Save(TaskContext::InputFile(*task_context_.GetInput("morphology-map")));
 
     // Write affixes to disk.
     WriteAffixTable(prefixes, TaskContext::InputFile(

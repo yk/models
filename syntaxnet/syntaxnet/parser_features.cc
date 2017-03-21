@@ -45,20 +45,20 @@ FeatureValue RootFeatureType::GetDomainSize() const {
   return wrapped_type_.GetDomainSize() + 1;
 }
 
-// Parser feature locator for accessing the remaining input tokens in the parser
-// state. It takes the offset relative to the current input token as argument.
-// Negative values represent tokens to the left, positive values to the right
-// and 0 (the default argument value) represents the current input token.
-class InputParserLocator : public ParserLocator<InputParserLocator> {
- public:
-  // Gets the new focus.
-  int GetFocus(const WorkspaceSet &workspaces, const ParserState &state) const {
-    const int offset = argument();
-    return state.Input(offset);
-  }
-};
+//// Parser feature locator for accessing the remaining input tokens in the parser
+//// state. It takes the offset relative to the current input token as argument.
+//// Negative values represent tokens to the left, positive values to the right
+//// and 0 (the default argument value) represents the current input token.
+//class InputParserLocator : public ParserLocator<InputParserLocator> {
+ //public:
+  //// Gets the new focus.
+  //int GetFocus(const WorkspaceSet &workspaces, const ParserState &state) const {
+    //const int offset = argument();
+    //return state.Input(offset);
+  //}
+//};
 
-REGISTER_PARSER_FEATURE_FUNCTION("input", InputParserLocator);
+//REGISTER_PARSER_FEATURE_FUNCTION("input", InputParserLocator);
 
 // Parser feature locator for accessing the stack in the parser state. The
 // argument represents the position on the stack, 0 being the top of the stack.
