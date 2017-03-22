@@ -64,13 +64,22 @@ class ParserState {
   // Clones the parser state.
   ParserState *Clone() const;
 
+    int NthArc(int head, int arc) const;
+    int NthArcN(int head, int node) const;
   // Returns the root label.
   int RootLabel() const;
   // Returns the number of tokens in the sentence.
   int NumTokens() const { return words_.size(); }
+  int NumLabels() const;
+  int NumWords() const;
+  int NumTags() const;
   int Word(int position) const;
   int GoldWord(int position) const;
+  int GoldRoot() const;
+    int GoldRightArcBeforeBuffer(int goldIndex) const;
+    int GoldLeftArcBeforeBuffer(int goldIndex) const;
 
+  int GoldIndex() const;
   int Stack(int position) const;
 
   // Returns the number of elements on the stack.
@@ -138,6 +147,7 @@ class ParserState {
   // Returns the string representation of a dependency label, or an empty string
   // if the label is invalid.
   string LabelAsString(int label) const;
+  string WordAsString(int word) const;
 
   // Returns a string representation of the parser state.
   string ToString() const;
@@ -159,9 +169,8 @@ class ParserState {
   bool is_gold() const { return is_gold_; }
   void set_is_gold(bool is_gold) { is_gold_ = is_gold; }
 
-
   // Parse stack of partially processed tokens.
-  int stack_ = -1;
+  int stack_;
 
   // List of head positions for the (partial) dependency tree.
   std::vector<int> head_;

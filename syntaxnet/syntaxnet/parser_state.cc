@@ -15,6 +15,7 @@ limitations under the License.
 
 #include "syntaxnet/parser_state.h"
 
+#include <iostream>
 #include "syntaxnet/kbest_syntax.pb.h"
 #include "syntaxnet/sentence.pb.h"
 #include "syntaxnet/term_frequency_map.h"
@@ -30,12 +31,12 @@ ParserState::ParserState(Sentence *sentence,
                          const TermFrequencyMap *word_map,
                          const TermFrequencyMap *tag_map
                          )
-    : sentence_(sentence),
+    : stack_(-1),
+      sentence_(sentence),
       transition_state_(transition_state),
       label_map_(label_map),
       word_map_(word_map),
       tag_map_(tag_map),
-      stack_(-1),
       root_label_(kDefaultRootLabel) {
   // Initialize the stack. Some transition systems could also push the
   // artificial root on the stack, so we make room for that as well.
@@ -69,9 +70,97 @@ ParserState *ParserState::Clone() const {
 
 int ParserState::RootLabel() const { return root_label_; }
 
+int ParserState::NthArc(int head, int arc) const {
+    int inc = arc > 0 ? 1 : -1;
+    for(int h = head; h < head_.size() && h >= 0; h += inc){
+        if(head_[h] == head){
+            arc -= inc;
+        }
+        if(arc == 0){
+            return head_[h];
+        }
+    }
+    return -1;
+}
+
+
+  int ParserState::NumLabels() const { return label_map_->Size(); }
+  int ParserState::NumWords() const { return word_map_->Size(); }
+  int ParserState::NumTags() const { return tag_map_->Size(); }
+
+int ParserState::NthArcN(int head, int node) const {
+    DCHECK(head_[node] == head);
+    int n = 0;
+    int inc = node > head ? 1 : -1;
+    for(int h = head; h * inc < node * inc; h += inc){
+        if(head_[h] == head){
+            n += inc;
+        }
+    }
+    return n;
+}
+
+int ParserState::GoldIndex() const {
+    DCHECK_GE(stack_, 0);
+    auto s = stack_;
+    vector<int> ns;
+    while(label_[s] != RootLabel()){
+        s = head_[s];
+        int n = NthArcN(head_[s], s);
+        ns.push_back(n);
+    }
+    auto g = GoldRoot();
+    while(g != -1 && ns.size() > 0){
+        int nb = ns.back();
+        ns.pop_back();
+        g = NthArc(g, nb);
+    }
+    return g;
+}
+
+int ParserState::GoldLeftArcBeforeBuffer(int goldIndex) const {
+    auto& t = sentence_->target();
+    auto bufSize = head_.size() - 1 - stack_;
+    bufSize -= 1;
+    if(goldIndex < bufSize){
+        bufSize = goldIndex;
+    }
+    for(int g = bufSize - 1; g >= 0; g--){
+        auto& tt = t.token(g);
+        if(tt.head() == goldIndex){
+            auto l = tt.label();
+            return label_map_->LookupIndex(l, RootLabel());
+        }
+    }
+    return -1;
+}
+
+int ParserState::GoldRightArcBeforeBuffer(int goldIndex) const {
+    auto& t = sentence_->target();
+    auto bufSize = head_.size() - 1 - stack_;
+    for(int g = bufSize - 1; g > goldIndex; g--){
+        auto& tt = t.token(g);
+        if(tt.head() == goldIndex){
+            auto l = tt.label();
+            return label_map_->LookupIndex(l, RootLabel());
+        }
+    }
+    return -1;
+}
+
+int ParserState::GoldRoot() const {
+    auto& t = sentence_->target();
+    for(int i=0; i<t.token_size(); i++){
+        if(t.token(i).head() == -1){
+            return i;
+        }
+    }
+    return -1;
+}
+
 int ParserState::GoldWord(int position) const {
-  auto word = sentence_->token(position).word();
-  auto wind = word_map_->LookupIndex(word, RootLabel());
+  auto word = sentence_->target().token(position).word();
+  auto wind = word_map_->LookupIndex(word, 0);
   return wind;
 }
 
@@ -206,6 +295,14 @@ void ParserState::AddParseToDocument(Sentence *sentence,
 
 bool ParserState::IsTokenCorrect(int index) const {
   return transition_state_->IsTokenCorrect(*this, index);
+}
+
+string ParserState::WordAsString(int word) const {
+  if (word < 0) return "UNK";
+  if (word >= 0 && word < word_map_->Size()) {
+    return word_map_->GetTerm(word);
+  }
+  return "";
 }
 
 string ParserState::LabelAsString(int label) const {

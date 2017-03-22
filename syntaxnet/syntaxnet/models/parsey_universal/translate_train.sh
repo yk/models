@@ -22,7 +22,6 @@ PLANG=$2
 PARAMS=200x200-0.08-4400-0.85-4
 
 python3 bazel-bin/syntaxnet/parser_trainer \
-    --compute_lexicon \
     --arg_prefix=brain_translator \
     --batch_size=32 \
     --decay_steps=4400 \
@@ -38,5 +37,5 @@ python3 bazel-bin/syntaxnet/parser_trainer \
     --params=$PARAMS \
     --alsologtostderr \
     --report_every=100 \
-    --checkpoint_every=1000 \
+    --checkpoint_every=100 \
     --num_epochs=10 

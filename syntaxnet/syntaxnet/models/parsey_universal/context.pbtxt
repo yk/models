@@ -541,21 +541,21 @@ input {
   name: 'nc-mrg-fr-en'
   record_format: 'conll-sentence'
   Part {
-    file_pattern: '/Users/yk/tmp/fr-en.fr.en.mrg'
+    file_pattern: '/local/home/ykilcher/tmp/fr-en.fr.en.mrg'
   }
 }
 input {
   name: 'nc-mrg-fr-en-train'
   record_format: 'conll-sentence'
   Part {
-    file_pattern: '/Users/yk/tmp/fr-en.fr.en.mrg.train'
+    file_pattern: '/local/home/ykilcher/tmp/fr-en.fr.en.mrg.train'
   }
 }
 input {
   name: 'nc-mrg-fr-en-dev'
   record_format: 'conll-sentence'
   Part {
-    file_pattern: '/Users/yk/tmp/fr-en.fr.en.mrg.dev'
+    file_pattern: '/local/home/ykilcher/tmp/fr-en.fr.en.mrg.dev'
   }
 }
 

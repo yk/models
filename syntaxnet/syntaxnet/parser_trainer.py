@@ -274,13 +274,15 @@ def main(unused_argv):
   # Rewrite context.
   RewriteContext()
 
+  cfgproto = tf.ConfigProto(intra_op_parallelism_threads=16)
+
   # Creates necessary term maps.
   if FLAGS.compute_lexicon:
     logging.info('Computing lexicon...')
-    with tf.Session(FLAGS.tf_master) as sess:
+    with tf.Session(FLAGS.tf_master, config=cfgproto) as sess:
       gen_parser_ops.lexicon_builder(task_context=OutputPath('context'),
                                      corpus_name=FLAGS.training_corpus).run()
-  with tf.Session(FLAGS.tf_master) as sess:
+  with tf.Session(FLAGS.tf_master, config=cfgproto) as sess:
     feature_sizes, domain_sizes, embedding_dims, num_actions = sess.run(
         gen_parser_ops.feature_size(task_context=OutputPath('context'),
                                     arg_prefix=FLAGS.arg_prefix))
@@ -288,7 +290,7 @@ def main(unused_argv):
   # Well formed and projectivize.
   if FLAGS.projectivize_training_set:
     logging.info('Preprocessing...')
-    with tf.Session(FLAGS.tf_master) as sess:
+    with tf.Session(FLAGS.tf_master, config=cfgproto) as sess:
       source, last = gen_parser_ops.document_source(
           task_context=OutputPath('context'),
           batch_size=FLAGS.batch_size,
@@ -307,7 +309,7 @@ def main(unused_argv):
           break
 
   logging.info('Training...')
-  with tf.Session(FLAGS.tf_master) as sess:
+  with tf.Session(FLAGS.tf_master, config=cfgproto) as sess:
     Train(sess, num_actions, feature_sizes, domain_sizes, embedding_dims)
 
 
