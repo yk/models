@@ -115,17 +115,21 @@ int ParserState::GoldIndex() const {
         ns.pop_back();
         g = NthArc(g, nb);
     }
+    if(g == -1){
+        g = sentence_->target().token_size() - (head_.size() - 1 - stack_) - 1;
+        //std::cerr <<sentence_->target().token_size() << " " << head_.size() << " " << stack_ << " "<< g << std::endl;
+    }
     return g;
 }
 
 int ParserState::GoldLeftArcBeforeBuffer(int goldIndex) const {
     auto& t = sentence_->target();
     auto bufSize = head_.size() - 1 - stack_;
-    bufSize -= 1;
-    if(goldIndex < bufSize){
-        bufSize = goldIndex;
+    auto goldStackSize = t.token_size() - bufSize;
+    if(goldIndex < goldStackSize){
+        bufSize = goldStackSize;
     }
-    for(int g = bufSize - 1; g >= 0; g--){
+    for(int g = goldStackSize - 1; g >= 0; g--){
         auto& tt = t.token(g);
         if(tt.head() == goldIndex){
             auto l = tt.label();
@@ -138,7 +142,8 @@ int ParserState::GoldLeftArcBeforeBuffer(int goldIndex) const {
 int ParserState::GoldRightArcBeforeBuffer(int goldIndex) const {
     auto& t = sentence_->target();
     auto bufSize = head_.size() - 1 - stack_;
-    for(int g = bufSize - 1; g > goldIndex; g--){
+    auto goldStackSize = t.token_size() - bufSize;
+    for(int g = goldStackSize - 1; g > goldIndex; g--){
         auto& tt = t.token(g);
         if(tt.head() == goldIndex){
             auto l = tt.label();

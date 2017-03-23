@@ -168,11 +168,13 @@ class ArcStandardTransitionSystem : public ParserTransitionSystem {
       auto goldIndex = state.GoldIndex();
       auto rightArc = state.GoldRightArcBeforeBuffer(goldIndex);
       if(rightArc != -1){
+          //std::cerr << "GoldRight " << goldIndex << " -> " << rightArc << std::endl;
           return RightArcAction(rightArc, &state);
       }
       
       auto leftArc = state.GoldLeftArcBeforeBuffer(goldIndex);
       if(leftArc != -1){
+          //std::cerr << "GoldLeft " << goldIndex << " -> " << leftArc << std::endl;
           return LeftArcAction(leftArc, &state);
       }
 
@@ -253,13 +255,13 @@ class ArcStandardTransitionSystem : public ParserTransitionSystem {
   bool IsAllowedLeftArc(const ParserState &state) const {
     // Left-arc requires two or more tokens on the stack but the first token
     // is the root an we do not want and left arc to the root.
-    return !state.StackEmpty();
+    return !state.StackEmpty() && state.head_.size() < 20;
   }
 
   // Returns true if a right-arc is allowed in the given parser state.
   bool IsAllowedRightArc(const ParserState &state) const {
     // Right arc requires three or more tokens on the stack.
-    return !state.StackEmpty();
+    return !state.StackEmpty() && state.head_.size() < 20;
   }
 
   // Performs the specified action on a given parser state, without adding the
@@ -282,7 +284,7 @@ class ArcStandardTransitionSystem : public ParserTransitionSystem {
   // Makes a shift by pushing the next input token on the stack and moving to
   // the next position.
   void PerformShift(ParserState *state, int word) const {
-    std::cerr << "Shift " << word << std::endl;
+    //std::cerr << "Shift " << word << std::endl;
     DCHECK(IsAllowedShift(*state));
     state->words_.push_back(word);
     state->stack_--;
@@ -291,7 +293,7 @@ class ArcStandardTransitionSystem : public ParserTransitionSystem {
   // Makes a left-arc between the two top tokens on stack and pops the second
   // token on stack.
   void PerformLeftArc(ParserState *state, int label) const {
-    std::cerr << "LeftArc " << label << std::endl;
+    //std::cerr << "LeftArc " << label << std::endl;
     DCHECK(IsAllowedLeftArc(*state));
     int head = state->head_.at(state->stack_);
     state->label_.insert(state->label_.begin() + state->stack_, label);
@@ -301,7 +303,7 @@ class ArcStandardTransitionSystem : public ParserTransitionSystem {
 
   // Makes a right-arc between the two top tokens on stack and pops the stack.
   void PerformRightArc(ParserState *state, int label) const {
-    std::cerr << "RightArc " << label << std::endl;
+    //std::cerr << "RightArc " << label << std::endl;
     DCHECK(IsAllowedRightArc(*state));
     int head = state->head_.at(state->stack_);
     state->stack_++;
@@ -328,7 +330,7 @@ class ArcStandardTransitionSystem : public ParserTransitionSystem {
                         const ParserState &state) const override {
     switch (ActionType(action, &state)) {
       case SHIFT:
-        return "SHIFT(" + std::to_string(action) + ")";
+        return "SHIFT(" + state.WordAsString(Label(action, &state)) + ")";
       case LEFT_ARC:
         return "LEFT_ARC(" + state.LabelAsString(Label(action, &state)) + ")";
       case RIGHT_ARC:

@@ -16,6 +16,7 @@
 """A program to train a tensorflow neural net parser from a a conll file."""
 
 
+from __future__ import print_function
 
 import os
 import os.path
@@ -147,8 +148,9 @@ def Eval(sess, parser, num_steps, best_eval_metric):
     for docs in tf_documents:
         doc = sentence_pb2.Sentence()
         doc.ParseFromString(docs)
-        for token in doc.token:
-            print(token)
+        for tk in doc.token:
+            print(tk.word, end=' ')
+        print()
 
     num_tokens += tf_eval_metrics[0]
     num_correct += tf_eval_metrics[1]
