@@ -188,6 +188,13 @@ int ParserState::Head(int index) const {
   return index == -1 ? -1 : head_[index];
 }
 
+int ParserState::SourceHead(int index) const {
+  DCHECK_GE(index, -1);
+  auto& src = sentence().source();
+  DCHECK_LT(index, src.token_size());
+  return index == -1 ? -1 : src.token(index).head();
+}
+
 int ParserState::Label(int index) const {
   DCHECK_GE(index, -1);
   DCHECK_LT(index, head_.size());

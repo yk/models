@@ -146,6 +146,20 @@ class BasicParserSentenceFeatureFunction :
   }
 };
 
+
+// Specialization of ParserSentenceFeatureFunction that calls the nested feature
+// with (Sentence, int) arguments based on the current integer focus.
+template<class F>
+class BasicParserSourceSentenceFeatureFunction :
+      public ParserSentenceFeatureFunction<F> {
+ public:
+  FeatureValue Compute(const WorkspaceSet &workspaces, const ParserState &state,
+                       int focus, const FeatureVector *result) const override {
+    if (focus == -1) return this->RootValue();
+    return this->feature_.Compute(workspaces, state.sentence().source(), focus, result);
+  }
+};
+
 }  // namespace syntaxnet
 
 #endif  // SYNTAXNET_PARSER_FEATURES_H_

@@ -93,6 +93,26 @@ class HeadFeatureLocator : public ParserIndexLocator<HeadFeatureLocator> {
 
 REGISTER_PARSER_IDX_FEATURE_FUNCTION("head", HeadFeatureLocator);
 
+
+// Parser feature locator for locating the head of the focus token. The argument
+// specifies the number of times the head function is applied. Please note that
+// this operates on partially built dependency trees.
+class SourceHeadFeatureLocator : public ParserIndexLocator<SourceHeadFeatureLocator> {
+ public:
+  // Updates the current focus to a new location. If the initial focus is
+  // outside the range of the sentence, returns -2.
+  void UpdateArgs(const WorkspaceSet &workspaces, const ParserState &state,
+                  int *focus) const {
+    if (*focus < -1 || *focus >= state.sentence().source().token_size()) {
+      *focus = -2;
+      return;
+    }
+    *focus = state.SourceHead(*focus);
+  }
+};
+
+REGISTER_PARSER_IDX_FEATURE_FUNCTION("sourcehead", SourceHeadFeatureLocator);
+
 // Parser feature locator for locating children of the focus token. The argument
 // specifies the number of times the leftmost (when the argument is < 0) or
 // rightmost (when the argument > 0) child function is applied. Please note that
@@ -167,11 +187,17 @@ REGISTER_PARSER_IDX_FEATURE_FUNCTION("label", LabelFeatureFunction);
 typedef BasicParserSentenceFeatureFunction<Word> WordFeatureFunction;
 REGISTER_PARSER_IDX_FEATURE_FUNCTION("word", WordFeatureFunction);
 
+typedef BasicParserSourceSentenceFeatureFunction<SourceWord> SourceWordFeatureFunction;
+REGISTER_PARSER_IDX_FEATURE_FUNCTION("sourceword", SourceWordFeatureFunction);
+
 typedef BasicParserSentenceFeatureFunction<Char> CharFeatureFunction;
 REGISTER_PARSER_IDX_FEATURE_FUNCTION("char", CharFeatureFunction);
 
-typedef BasicParserSentenceFeatureFunction<Tag> TagFeatureFunction;
+typedef BasicParserSentenceFeatureFunction<SourceTag> TagFeatureFunction;
 REGISTER_PARSER_IDX_FEATURE_FUNCTION("tag", TagFeatureFunction);
+
+typedef BasicParserSourceSentenceFeatureFunction<Tag> SourceTagFeatureFunction;
+REGISTER_PARSER_IDX_FEATURE_FUNCTION("sourcetag", SourceTagFeatureFunction);
 
 typedef BasicParserSentenceFeatureFunction<Digit> DigitFeatureFunction;
 REGISTER_PARSER_IDX_FEATURE_FUNCTION("digit", DigitFeatureFunction);
@@ -228,6 +254,36 @@ class ParserTokenFeatureFunction : public NestedFeatureFunction<
 
 REGISTER_PARSER_IDX_FEATURE_FUNCTION("token",
                                      ParserTokenFeatureFunction);
+
+
+// Parser feature function that can use nested sentence feature functions for
+// feature extraction.
+class ParserSourceTokenFeatureFunction : public NestedFeatureFunction<
+  FeatureFunction<Sentence, int>, ParserState, int> {
+ public:
+  void Preprocess(WorkspaceSet *workspaces, ParserState *state) const override {
+    for (auto *function : nested_) {
+      function->Preprocess(workspaces, state->mutable_sentence()->mutable_source());
+    }
+  }
+
+  void Evaluate(const WorkspaceSet &workspaces, const ParserState &state,
+                int focus, FeatureVector *result) const override {
+    for (auto *function : nested_) {
+      function->Evaluate(workspaces, state.sentence().source(), focus, result);
+    }
+  }
+
+  // Returns the first nested feature's computed value.
+  FeatureValue Compute(const WorkspaceSet &workspaces, const ParserState &state,
+                       int focus, const FeatureVector *result) const override {
+    if (nested_.empty()) return -1;
+    return nested_[0]->Compute(workspaces, state.sentence().source(), focus, result);
+  }
+};
+
+REGISTER_PARSER_IDX_FEATURE_FUNCTION("sourcetoken",
+                                     ParserSourceTokenFeatureFunction);
 
 // Parser feature that always fetches the focus (position) of the token.
 class FocusFeatureFunction : public ParserIndexFeatureFunction {
