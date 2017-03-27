@@ -271,6 +271,81 @@ Parameter {
   name: "join_category_to_pos"
   value: "true"
 }
+
+input {
+  name: "source-word-map"
+  Part {
+    file_pattern: "source-word-map"
+  }
+}
+input {
+  name: "source-category-map"
+  Part {
+    file_pattern: "source-category-map"
+  }
+}
+input {
+  name: "source-lcword-map"
+  Part {
+    file_pattern: "source-lcword-map"
+  }
+}
+input {
+  name: "source-char-map"
+  Part {
+    file_pattern: "source-char-map"
+  }
+}
+input {
+  name: "source-tag-map"
+  Part {
+    file_pattern: "source-tag-map"
+  }
+}
+
+input {
+  name: "source-tag-to-category"
+  Part {
+    file_pattern: "source-tag-to-category"
+  }
+}
+input {
+  name: "source-label-map"
+  Part {
+    file_pattern: "source-label-map"
+  }
+}
+input {
+  name: "source-char-ngram-map"
+  Part {
+    file_pattern: "source-char-ngram-map"
+  }
+}
+input {
+  name: "source-prefix-table"
+  Part {
+    file_pattern: "source-prefix-table"
+  }
+}
+input {
+  name: "source-suffix-table"
+  Part {
+    file_pattern: "source-suffix-table"
+  }
+}
+input {
+  name: "source-morph-label-set"
+  Part {
+    file_pattern: "source-morph-label-set"
+  }
+}
+input {
+  name: "source-morphology-map"
+  Part {
+    file_pattern: "source-morphology-map"
+  }
+}
+
 input {
   name: "word-map"
   Part {
@@ -344,6 +419,7 @@ input {
     file_pattern: "morphology-map"
   }
 }
+
 input {
   name: 'stdin'
   record_format: 'tokenized-text'

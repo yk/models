@@ -79,12 +79,28 @@ class LexiconBuilder : public OpKernel {
     TermFrequencyMap chars;
     TermFrequencyMap morphs;
 
+    TermFrequencyMap source_words;
+    TermFrequencyMap source_lcwords;
+    TermFrequencyMap source_tags;
+    TermFrequencyMap source_categories;
+    TermFrequencyMap source_labels;
+    TermFrequencyMap source_chars;
+    TermFrequencyMap source_morphs;
+
     // Affix tables to be populated by the corpus.
     AffixTable prefixes(AffixTable::PREFIX, max_prefix_length_);
     AffixTable suffixes(AffixTable::SUFFIX, max_suffix_length_);
 
     // Tag-to-category mapping.
     TagToCategoryMap tag_to_category;
+
+
+    // Affix tables to be populated by the corpus.
+    AffixTable source_prefixes(AffixTable::PREFIX, max_prefix_length_);
+    AffixTable source_suffixes(AffixTable::SUFFIX, max_suffix_length_);
+
+    // Tag-to-category mapping.
+    TagToCategoryMap source_tag_to_category;
 
     // Make a pass over the corpus.
     int64 num_tokens = 0;
@@ -137,6 +153,51 @@ class LexiconBuilder : public OpKernel {
         ++num_tokens;
       }
 
+      // Gather token information.
+      for (int t = 0; t < document->source().token_size(); ++t) {
+        // Get token and lowercased word.
+        auto &token = document->source().token(t);
+        string word = token.word();
+        utils::NormalizeDigits(&word);
+        string lcword = tensorflow::str_util::Lowercase(word);
+
+        // Make sure the token does not contain a newline.
+        CHECK(lcword.find('\n') == string::npos);
+
+        // Increment frequencies (only for terms that exist).
+        if (!word.empty() && !HasSpaces(word)) source_words.Increment(word);
+        if (!lcword.empty() && !HasSpaces(lcword)) source_lcwords.Increment(lcword);
+        if (!token.tag().empty()) source_tags.Increment(token.tag());
+        if (!token.category().empty()) source_categories.Increment(token.category());
+        if (!token.label().empty()) source_labels.Increment(token.label());
+
+        if(token.HasExtension(TokenMorphology::morphology)){
+            auto& morph = token.GetExtension(TokenMorphology::morphology);
+            for(int m=0; m < morph.attribute_size(); m++){
+                auto& attr = morph.attribute(m);
+                source_morphs.Increment(attr.name());
+            }
+        }
+
+        // Add prefixes/suffixes for the current word.
+        source_prefixes.AddAffixesForWord(word.c_str(), word.size());
+        source_suffixes.AddAffixesForWord(word.c_str(), word.size());
+
+        // Add mapping from tag to category.
+        source_tag_to_category.SetCategory(token.tag(), token.category());
+
+        // Add characters.
+        std::vector<tensorflow::StringPiece> char_sp;
+        SegmenterUtils::GetUTF8Chars(word, &char_sp);
+        for (const auto &c : char_sp) {
+          const string c_str = c.ToString();
+          if (!c_str.empty() && !HasSpaces(c_str)) source_chars.Increment(c_str);
+        }
+
+        // Update the number of processed tokens.
+        ++num_tokens;
+      }
+
       delete document;
       ++num_documents;
     }
@@ -160,8 +221,28 @@ class LexiconBuilder : public OpKernel {
                                   *task_context_.GetInput("suffix-table")));
 
     // Write tag-to-category mapping to disk.
-    tag_to_category.Save(
+    source_tag_to_category.Save(
         TaskContext::InputFile(*task_context_.GetInput("tag-to-category")));
+
+    // Write mappings to disk.
+    source_words.Save(TaskContext::InputFile(*task_context_.GetInput("source-word-map")));
+    source_lcwords.Save(TaskContext::InputFile(*task_context_.GetInput("source-lcword-map")));
+    source_tags.Save(TaskContext::InputFile(*task_context_.GetInput("source-tag-map")));
+    source_categories.Save(
+        TaskContext::InputFile(*task_context_.GetInput("source-category-map")));
+    source_labels.Save(TaskContext::InputFile(*task_context_.GetInput("source-label-map")));
+    source_chars.Save(TaskContext::InputFile(*task_context_.GetInput("source-char-map")));
+    source_morphs.Save(TaskContext::InputFile(*task_context_.GetInput("source-morphology-map")));
+
+    // Write affixes to disk.
+    WriteAffixTable(source_prefixes, TaskContext::InputFile(
+                                  *task_context_.GetInput("source-prefix-table")));
+    WriteAffixTable(source_suffixes, TaskContext::InputFile(
+                                  *task_context_.GetInput("source-suffix-table")));
+
+    // Write tag-to-category mapping to disk.
+    source_tag_to_category.Save(
+        TaskContext::InputFile(*task_context_.GetInput("source-tag-to-category")));
   }
 
  private:
@@ -212,6 +293,7 @@ class FeatureSize : public OpKernel {
         context,
         TextFormat::ParseFromString(data, task_context_.mutable_spec()),
         InvalidArgument("Could not parse task context at ", task_context_path));
+
     string label_map_path =
         TaskContext::InputFile(*task_context_.GetInput("label-map"));
     label_map_ = SharedStoreUtils::GetWithDefaultName<TermFrequencyMap>(
@@ -224,12 +306,29 @@ class FeatureSize : public OpKernel {
         TaskContext::InputFile(*task_context_.GetInput("tag-map"));
     tag_map_ = SharedStoreUtils::GetWithDefaultName<TermFrequencyMap>(
         tag_map_path, 0, 0);
+
+    string source_label_map_path =
+        TaskContext::InputFile(*task_context_.GetInput("source-label-map"));
+    source_label_map_ = SharedStoreUtils::GetWithDefaultName<TermFrequencyMap>(
+        label_map_path, 0, 0);
+    string source_word_map_path =
+        TaskContext::InputFile(*task_context_.GetInput("source-word-map"));
+    source_word_map_ = SharedStoreUtils::GetWithDefaultName<TermFrequencyMap>(
+        word_map_path, 0, 0);
+    string source_tag_map_path =
+        TaskContext::InputFile(*task_context_.GetInput("source-tag-map"));
+    source_tag_map_ = SharedStoreUtils::GetWithDefaultName<TermFrequencyMap>(
+        tag_map_path, 0, 0);
   }
 
   ~FeatureSize() override {
       SharedStore::Release(label_map_);
       SharedStore::Release(word_map_);
       SharedStore::Release(tag_map_);
+      
+      SharedStore::Release(source_label_map_);
+      SharedStore::Release(source_word_map_);
+      SharedStore::Release(source_tag_map_);
   }
 
   void Compute(OpKernelContext *context) override {
@@ -273,6 +372,12 @@ class FeatureSize : public OpKernel {
   const TermFrequencyMap *label_map_;
   const TermFrequencyMap *word_map_;
   const TermFrequencyMap *tag_map_;
+
+
+  // Dependency label map used in transition system.
+  const TermFrequencyMap *source_label_map_;
+  const TermFrequencyMap *source_word_map_;
+  const TermFrequencyMap *source_tag_map_;
 
   // Prefix for context parameters.
   string arg_prefix_;

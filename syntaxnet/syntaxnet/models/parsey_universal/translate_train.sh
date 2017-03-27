@@ -38,4 +38,5 @@ python3 bazel-bin/syntaxnet/parser_trainer \
     --alsologtostderr \
     --report_every=100 \
     --checkpoint_every=100 \
-    --num_epochs=10 
+    --num_epochs=10 \
+    --compute_lexicon
