@@ -90,6 +90,7 @@ class ParserState {
 
   // Returns the head index for a given token.
   int Head(int index) const;
+  int SourceHead(int index) const;
 
   // Returns the label of the relation to head for a given token.
   int Label(int index) const;

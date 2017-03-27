@@ -305,6 +305,17 @@ class Word : public TermFrequencyMapFeature {
   }
 };
 
+
+class SourceWord : public TermFrequencyMapFeature {
+ public:
+  SourceWord() : TermFrequencyMapFeature("source-word-map") {}
+
+  FeatureValue ComputeValue(const Token &token) const override {
+    const string &form = token.word();
+    return term_map().LookupIndex(form, UnknownValue());
+  }
+};
+
 class Char : public TermFrequencyMapFeature {
  public:
   Char() : TermFrequencyMapFeature("char-map") {}
@@ -345,6 +356,17 @@ class LowercaseWord : public TermFrequencyMapFeature {
   }
 };
 
+
+class SourceLowercaseWord : public TermFrequencyMapFeature {
+ public:
+  SourceLowercaseWord() : TermFrequencyMapFeature("source-lc-word-map") {}
+
+  FeatureValue ComputeValue(const Token &token) const override {
+    const string lcword = utils::Lowercase(token.word());
+    return term_map().LookupIndex(lcword, UnknownValue());
+  }
+};
+
 class Tag : public TermFrequencyMapFeature {
  public:
   Tag() : TermFrequencyMapFeature("tag-map") {}
@@ -357,6 +379,25 @@ class Tag : public TermFrequencyMapFeature {
 class Label : public TermFrequencyMapFeature {
  public:
   Label() : TermFrequencyMapFeature("label-map") {}
+
+  FeatureValue ComputeValue(const Token &token) const override {
+    return term_map().LookupIndex(token.label(), UnknownValue());
+  }
+};
+
+
+class SourceTag : public TermFrequencyMapFeature {
+ public:
+  SourceTag() : TermFrequencyMapFeature("source-tag-map") {}
+
+  FeatureValue ComputeValue(const Token &token) const override {
+    return term_map().LookupIndex(token.tag(), UnknownValue());
+  }
+};
+
+class SourceLabel : public TermFrequencyMapFeature {
+ public:
+  SourceLabel() : TermFrequencyMapFeature("source-label-map") {}
 
   FeatureValue ComputeValue(const Token &token) const override {
     return term_map().LookupIndex(token.label(), UnknownValue());
