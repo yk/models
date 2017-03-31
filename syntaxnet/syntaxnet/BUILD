@@ -3,7 +3,7 @@
 
 package(
     default_visibility = [
-        "//visibility:private",
+        "//visibility:public",
     ],
     features = ["-layering_check"],
 )
@@ -112,6 +112,7 @@ cc_library(
     deps = [
         "//external:gtest",
         "@org_tensorflow//tensorflow/core:lib",
+        "@org_tensorflow//tensorflow/core:test",
         "@org_tensorflow//tensorflow/core:testlib",
     ],
 )
@@ -131,6 +132,7 @@ cc_library(
     name = "text_formats",
     srcs = ["text_formats.cc"],
     deps = [
+        ":base",
         ":document_format",
         ":segmenter_utils",
         ":sentence_proto",
@@ -169,6 +171,17 @@ cc_library(
         "//util/utf8:unicodetext",
     ],
     alwayslink = 1,
+)
+
+cc_library(
+    name = "char_ngram_string_extractor",
+    srcs = ["char_ngram_string_extractor.cc"],
+    hdrs = ["char_ngram_string_extractor.h"],
+    deps = [
+        ":base",
+        ":segmenter_utils",
+        ":task_context",
+    ],
 )
 
 cc_library(
@@ -223,10 +236,31 @@ cc_library(
     hdrs = ["sentence_features.h"],
     deps = [
         ":affix",
+        ":char_ngram_string_extractor",
+        ":char_properties",
         ":feature_extractor",
         ":registry",
         ":segmenter_utils",
+        ":shared_store",
+        ":task_context",
+        ":workspace",
+        "//util/utf8:unicodetext",
     ],
+    alwayslink = 1,
+)
+
+cc_library(
+    name = "whole_sentence_features",
+    srcs = ["whole_sentence_features.cc"],
+    hdrs = ["whole_sentence_features.h"],
+    deps = [
+        ":base",
+        ":feature_extractor",
+        ":registry",
+        ":task_context",
+        ":workspace",
+    ],
+    alwayslink = 1,
 )
 
 cc_library(
@@ -305,9 +339,8 @@ cc_library(
         "parser_transitions.h",
     ],
     deps = [
-        ":affix",
+        ":base",
         ":feature_extractor",
-        ":kbest_syntax_proto",
         ":morphology_label_set",
         ":registry",
         ":segmenter_utils",
@@ -316,6 +349,8 @@ cc_library(
         ":shared_store",
         ":task_context",
         ":term_frequency_map",
+        ":utils",
+        ":whole_sentence_features",
         ":workspace",
     ],
     alwayslink = 1,
@@ -341,10 +376,13 @@ cc_library(
     srcs = ["embedding_feature_extractor.cc"],
     hdrs = ["embedding_feature_extractor.h"],
     deps = [
+        ":base",
         ":feature_extractor",
         ":parser_transitions",
+        ":sentence_features",
         ":sparse_proto",
         ":task_context",
+        ":utils",
         ":workspace",
     ],
 )
@@ -389,6 +427,7 @@ cc_library(
     deps = [
         ":document_format",
         ":parser_transitions",
+        ":segmenter_utils",
         ":sentence_batch",
         ":sentence_proto",
         ":task_context",
@@ -401,14 +440,17 @@ cc_library(
     name = "lexicon_builder",
     srcs = ["lexicon_builder.cc"],
     deps = [
-        ":dictionary_proto",
-        ":document_format",
+        ":affix",
+        ":base",
+        ":char_ngram_string_extractor",
+        ":feature_extractor",
         ":parser_transitions",
         ":segmenter_utils",
         ":sentence_batch",
         ":sentence_proto",
-        ":task_context",
+        ":term_frequency_map",
         ":text_formats",
+        ":utils",
     ],
     alwayslink = 1,
 )
@@ -485,6 +527,17 @@ cc_test(
 )
 
 cc_test(
+    name = "char_ngram_string_extractor_test",
+    srcs = ["char_ngram_string_extractor_test.cc"],
+    deps = [
+        ":char_ngram_string_extractor",
+        ":task_context",
+        ":test_main",
+        "@org_tensorflow//tensorflow/core:test",
+    ],
+)
+
+cc_test(
     name = "segmenter_utils_test",
     srcs = ["segmenter_utils_test.cc"],
     deps = [
@@ -508,6 +561,23 @@ cc_test(
         ":task_spec_proto",
         ":term_frequency_map",
         ":test_main",
+        ":utils",
+        ":workspace",
+    ],
+)
+
+cc_test(
+    name = "whole_sentence_features_test",
+    size = "medium",
+    srcs = ["whole_sentence_features_test.cc"],
+    deps = [
+        ":feature_extractor",
+        ":parser_transitions",
+        ":sentence_proto",
+        ":task_context",
+        ":term_frequency_map",
+        ":test_main",
+        ":whole_sentence_features",
         ":workspace",
     ],
 )

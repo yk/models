@@ -37,7 +37,8 @@ ParserState::ParserState(Sentence *sentence,
       label_map_(label_map),
       word_map_(word_map),
       tag_map_(tag_map),
-      root_label_(kDefaultRootLabel) {
+      root_label_(label_map->LookupIndex(kRootLabel,
+                                         kDefaultRootLabel  /* unknown */)){
   // Initialize the stack. Some transition systems could also push the
   // artificial root on the stack, so we make room for that as well.
 
@@ -68,6 +69,8 @@ ParserState *ParserState::Clone() const {
   new_state->transitions_.assign(transitions_.begin(), transitions_.end());
   new_state->score_ = score_;
   new_state->is_gold_ = is_gold_;
+  new_state->keep_history_ = keep_history_;
+  new_state->history_.assign(history_.begin(), history_.end());
   return new_state;
 }
 
@@ -88,10 +91,8 @@ int ParserState::NthArc(int head, int arc) const {
     return -1;
 }
 
-
-  int ParserState::NumLabels() const { return label_map_->Size(); }
-  int ParserState::NumWords() const { return word_map_->Size(); }
-  int ParserState::NumTags() const { return tag_map_->Size(); }
+int ParserState::NumWords() const { return word_map_->Size(); }
+int ParserState::NumTags() const { return tag_map_->Size(); }
 
 int ParserState::NthArcN(int head, int node) const {
     DCHECK(head_[node] == head);
@@ -195,6 +196,8 @@ int ParserState::GoldWord(int position) const {
 
 int ParserState::Word(int position) const {
   return words_[NumTokens() - 1 - position];
+int ParserState::NumLabels() const {
+  return label_map_->Size() + (RootLabel() == kDefaultRootLabel ? 1 : 0);
 }
 
 int ParserState::StackSize() const { return stack_ + 1; }
@@ -342,7 +345,7 @@ string ParserState::WordAsString(int word) const {
 }
 
 string ParserState::LabelAsString(int label) const {
-  if (label == root_label_) return "ROOT";
+  if (label == root_label_) return kRootLabel;
   if (label >= 0 && label < label_map_->Size()) {
     return label_map_->GetTerm(label);
   }

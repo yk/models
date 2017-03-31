@@ -21,10 +21,9 @@ limitations under the License.
 #include <string>
 #include <vector>
 
-#include "syntaxnet/utils.h"
-#include "syntaxnet/kbest_syntax.pb.h"
 #include "syntaxnet/parser_transitions.h"
 #include "syntaxnet/sentence.pb.h"
+#include "syntaxnet/utils.h"
 
 namespace syntaxnet {
 
@@ -80,6 +79,7 @@ class ParserState {
     int GoldLeftArcBeforeBuffer(int goldIndex) const;
 
   int GoldIndex() const;
+
   int Stack(int position) const;
 
   // Returns the number of elements on the stack.
@@ -185,6 +185,13 @@ class ParserState {
   std::vector<int> tags_;
 
   std::vector<int> transitions_;
+  // Gets/sets the flag for recording the history of transitions.
+  bool keep_history() const { return keep_history_; }
+  void set_keep_history(bool keep_history) { keep_history_ = keep_history; }
+
+  // History accessors.
+  const std::vector<ParserAction> &history() const { return history_; }
+  std::vector<ParserAction> *mutable_history() { return &history_; }
 
  private:
   // Empty constructor used for the cloning operation.
@@ -217,6 +224,10 @@ class ParserState {
 
   // True if this is the gold standard sequence (used for structured learning).
   bool is_gold_ = false;
+
+  // Transition history.
+  bool keep_history_ = false;
+  std::vector<ParserAction> history_;
 
   TF_DISALLOW_COPY_AND_ASSIGN(ParserState);
 };
