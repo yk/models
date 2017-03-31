@@ -57,12 +57,15 @@ ParserState *ParserState::Clone() const {
   new_state->transition_state_ =
       (transition_state_ == nullptr ? nullptr : transition_state_->Clone());
   new_state->label_map_ = label_map_;
+  new_state->word_map_ = word_map_;
+  new_state->tag_map_ = tag_map_;
   new_state->root_label_ = root_label_;
   new_state->stack_ = stack_;
   new_state->words_.assign(words_.begin(), words_.end());
   new_state->tags_.assign(tags_.begin(), tags_.end());
   new_state->head_.assign(head_.begin(), head_.end());
   new_state->label_.assign(label_.begin(), label_.end());
+  new_state->transitions_.assign(transitions_.begin(), transitions_.end());
   new_state->score_ = score_;
   new_state->is_gold_ = is_gold_;
   return new_state;
@@ -71,13 +74,15 @@ ParserState *ParserState::Clone() const {
 int ParserState::RootLabel() const { return root_label_; }
 
 int ParserState::NthArc(int head, int arc) const {
+    auto& t = sentence_->target();
     int inc = arc > 0 ? 1 : -1;
-    for(int h = head; h < head_.size() && h >= 0; h += inc){
-        if(head_[h] == head){
+    arc -= inc;
+    for(int h = head + inc; h < t.token_size() && h >= 0; h += inc){
+        if(t.token(h).head() == head){
+            if(arc == 0){
+                return h;
+            }
             arc -= inc;
-        }
-        if(arc == 0){
-            return head_[h];
         }
     }
     return -1;
@@ -92,33 +97,52 @@ int ParserState::NthArcN(int head, int node) const {
     DCHECK(head_[node] == head);
     int n = 0;
     int inc = node > head ? 1 : -1;
-    for(int h = head; h * inc < node * inc; h += inc){
+    for(int h = head + inc; h * inc < node * inc; h += inc){
         if(head_[h] == head){
             n += inc;
         }
     }
-    return n;
+    return n + inc;
 }
 
 int ParserState::GoldIndex() const {
     DCHECK_GE(stack_, 0);
     auto s = stack_;
+    //std::cerr << "labels";
+    //for(auto& n : label_){
+        //std::cerr << " " << n;
+    //}
+    //std::cerr << std::endl;
     vector<int> ns;
-    while(label_[s] != RootLabel()){
-        s = head_[s];
+    while(s >= 0 && s < label_.size() && head_[s] != s && label_[s] != RootLabel()){
         int n = NthArcN(head_[s], s);
         ns.push_back(n);
+        s = head_[s];
     }
     auto g = GoldRoot();
+    //std::cerr << "GOLDROOT: " << g << std::endl;
     while(g != -1 && ns.size() > 0){
         int nb = ns.back();
+        auto new_g = NthArc(g, nb);
+        if(new_g == -1)
+            break;
+        g = new_g;
         ns.pop_back();
-        g = NthArc(g, nb);
     }
     if(g == -1){
         g = sentence_->target().token_size() - (head_.size() - 1 - stack_) - 1;
         //std::cerr <<sentence_->target().token_size() << " " << head_.size() << " " << stack_ << " "<< g << std::endl;
+        //std::cerr << "case 1" << std::endl;
     }
+    if(g < 0){
+        g = 0;
+        //std::cerr << "case 2" << std::endl;
+    }
+    if(g >= sentence_->target().token_size()){
+        g = sentence_->target().token_size() - 1;
+        //std::cerr << "case 3" << std::endl;
+    }
+    //std::cerr << "G: " << g << std::endl;
     return g;
 }
 
@@ -127,7 +151,7 @@ int ParserState::GoldLeftArcBeforeBuffer(int goldIndex) const {
     auto bufSize = head_.size() - 1 - stack_;
     auto goldStackSize = t.token_size() - bufSize;
     if(goldIndex < goldStackSize){
-        bufSize = goldStackSize;
+        goldStackSize = goldIndex;
     }
     for(int g = goldStackSize - 1; g >= 0; g--){
         auto& tt = t.token(g);
@@ -165,12 +189,12 @@ int ParserState::GoldRoot() const {
 
 int ParserState::GoldWord(int position) const {
   auto word = sentence_->target().token(position).word();
-  auto wind = word_map_->LookupIndex(word, 0);
+  auto wind = word_map_->LookupIndex(word, word_map_->Size() - 1);
   return wind;
 }
 
 int ParserState::Word(int position) const {
-  return words_[position];
+  return words_[NumTokens() - 1 - position];
 }
 
 int ParserState::StackSize() const { return stack_ + 1; }

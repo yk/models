@@ -45,6 +45,37 @@ FeatureValue RootFeatureType::GetDomainSize() const {
   return wrapped_type_.GetDomainSize() + 1;
 }
 
+// Parser feature locator for accessing the remaining input tokens in the parser
+// state. It takes the offset relative to the current input token as argument.
+// Negative values represent tokens to the left, positive values to the right
+// and 0 (the default argument value) represents the current input token.
+class SourceParserLocator : public ParserLocator<SourceParserLocator> {
+ public:
+  // Gets the new focus.
+  int GetFocus(const WorkspaceSet &workspaces, const ParserState &state) const {
+    const int offset = argument();
+    return offset;
+  }
+};
+
+REGISTER_PARSER_FEATURE_FUNCTION("source", SourceParserLocator);
+
+// Parser feature locator for accessing the remaining input tokens in the parser
+// state. It takes the offset relative to the current input token as argument.
+// Negative values represent tokens to the left, positive values to the right
+// and 0 (the default argument value) represents the current input token.
+class BufferParserLocator : public ParserLocator<BufferParserLocator> {
+ public:
+  // Gets the new focus.
+  int GetFocus(const WorkspaceSet &workspaces, const ParserState &state) const {
+    const int offset = argument();
+    return state.head_.size() - state.NumTokens() + offset;
+  }
+};
+
+REGISTER_PARSER_FEATURE_FUNCTION("buffer", BufferParserLocator);
+
+
 //// Parser feature locator for accessing the remaining input tokens in the parser
 //// state. It takes the offset relative to the current input token as argument.
 //// Negative values represent tokens to the left, positive values to the right
@@ -166,6 +197,29 @@ REGISTER_PARSER_IDX_FEATURE_FUNCTION("sibling", SiblingFeatureLocator);
 
 // Feature function for computing the label from focus token. Note that this
 // does not use the precomputed values, since we get the labels from the stack;
+// the reason it utilizes sentence_features::Word is to obtain the label map.
+class WordFeatureFunction : public BasicParserSentenceFeatureFunction<Word> {
+ public:
+  // Computes the word of the relation between the focus token and its parent.
+  // Valid focus values range from -1 to sentence->size() - 1, inclusively.
+  FeatureValue Compute(const WorkspaceSet &workspaces, const ParserState &state,
+                       int focus, const FeatureVector *result) const override {
+    auto stacksize = state.head_.size() - state.NumTokens();
+    focus -= stacksize;
+    if (focus == -1) return RootValue();
+    if (focus < -1 || focus >= state.NumTokens()){
+      return feature_.NumValues();
+    }
+    const int word = state.Word(focus);
+    return word == -1 ? RootValue() : word;
+  }
+};
+
+REGISTER_PARSER_IDX_FEATURE_FUNCTION("word", WordFeatureFunction);
+
+
+// Feature function for computing the label from focus token. Note that this
+// does not use the precomputed values, since we get the labels from the stack;
 // the reason it utilizes sentence_features::Label is to obtain the label map.
 class LabelFeatureFunction : public BasicParserSentenceFeatureFunction<Label> {
  public:
@@ -174,7 +228,7 @@ class LabelFeatureFunction : public BasicParserSentenceFeatureFunction<Label> {
   FeatureValue Compute(const WorkspaceSet &workspaces, const ParserState &state,
                        int focus, const FeatureVector *result) const override {
     if (focus == -1) return RootValue();
-    if (focus < -1 || focus >= state.sentence().token_size()) {
+    if (focus < -1 || focus >= state.head_.size()){
       return feature_.NumValues();
     }
     const int label = state.Label(focus);
@@ -184,8 +238,11 @@ class LabelFeatureFunction : public BasicParserSentenceFeatureFunction<Label> {
 
 REGISTER_PARSER_IDX_FEATURE_FUNCTION("label", LabelFeatureFunction);
 
-typedef BasicParserSentenceFeatureFunction<Word> WordFeatureFunction;
-REGISTER_PARSER_IDX_FEATURE_FUNCTION("word", WordFeatureFunction);
+typedef BasicParserSourceSentenceFeatureFunction<SourceLabel> SourceLabelFeatureFunction;
+REGISTER_PARSER_IDX_FEATURE_FUNCTION("sourcelabel", SourceLabelFeatureFunction);
+
+//typedef BasicParserSentenceFeatureFunction<Word> WordFeatureFunction;
+//REGISTER_PARSER_IDX_FEATURE_FUNCTION("word", WordFeatureFunction);
 
 typedef BasicParserSourceSentenceFeatureFunction<SourceWord> SourceWordFeatureFunction;
 REGISTER_PARSER_IDX_FEATURE_FUNCTION("sourceword", SourceWordFeatureFunction);
@@ -193,10 +250,10 @@ REGISTER_PARSER_IDX_FEATURE_FUNCTION("sourceword", SourceWordFeatureFunction);
 typedef BasicParserSentenceFeatureFunction<Char> CharFeatureFunction;
 REGISTER_PARSER_IDX_FEATURE_FUNCTION("char", CharFeatureFunction);
 
-typedef BasicParserSentenceFeatureFunction<SourceTag> TagFeatureFunction;
+typedef BasicParserSentenceFeatureFunction<Tag> TagFeatureFunction;
 REGISTER_PARSER_IDX_FEATURE_FUNCTION("tag", TagFeatureFunction);
 
-typedef BasicParserSourceSentenceFeatureFunction<Tag> SourceTagFeatureFunction;
+typedef BasicParserSourceSentenceFeatureFunction<SourceTag> SourceTagFeatureFunction;
 REGISTER_PARSER_IDX_FEATURE_FUNCTION("sourcetag", SourceTagFeatureFunction);
 
 typedef BasicParserSentenceFeatureFunction<Digit> DigitFeatureFunction;
@@ -298,16 +355,42 @@ class FocusFeatureFunction : public ParserIndexFeatureFunction {
 
   void Evaluate(const WorkspaceSet &workspaces, const ParserState &object,
                 int focus, FeatureVector *result) const override {
-    FeatureValue value = focus;
+    FeatureValue value = focus + 1;
     result->add(feature_type(), value);
   }
 
   FeatureValue Compute(const WorkspaceSet &workspaces, const ParserState &state,
                        int focus, const FeatureVector *result) const override {
-    return focus;
+    return focus + 1;
   }
 };
 
 REGISTER_PARSER_IDX_FEATURE_FUNCTION("focus", FocusFeatureFunction);
+
+
+// Parser feature that always fetches the focus (position) of the token.
+class SourceLengthFeatureFunction : public ParserIndexFeatureFunction {
+ public:
+  // Initializes the feature function.
+  void Init(TaskContext *context) override {
+    // Note: this feature can return up to N values, where N is the length of
+    // the input sentence. Here, we give the arbitrary number 100 since it
+    // is not used.
+    set_feature_type(new NumericFeatureType(name(), 100));
+  }
+
+  void Evaluate(const WorkspaceSet &workspaces, const ParserState &state,
+                int focus, FeatureVector *result) const override {
+    FeatureValue value = state.sentence().source().token_size();
+    result->add(feature_type(), value);
+  }
+
+  FeatureValue Compute(const WorkspaceSet &workspaces, const ParserState &state,
+                       int focus, const FeatureVector *result) const override {
+    return state.sentence().source().token_size();
+  }
+};
+
+REGISTER_PARSER_IDX_FEATURE_FUNCTION("sourcelength", SourceLengthFeatureFunction);
 
 }  // namespace syntaxnet

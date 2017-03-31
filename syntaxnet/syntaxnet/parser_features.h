@@ -133,6 +133,51 @@ class ParserSentenceFeatureFunction : public ParserIndexFeatureFunction {
   F feature_;
 };
 
+
+// Simple feature function that wraps a Sentence based feature
+// function. It adds a "<ROOT>" feature value that is triggered whenever the
+// focus is the special root token. This class is sub-classed based on the
+// extracted arguments of the nested function.
+template<class F>
+class ParserSourceSentenceFeatureFunction : public ParserIndexFeatureFunction {
+ public:
+  // Instantiates and sets up the nested feature.
+  void Setup(TaskContext *context) override {
+    this->feature_.set_descriptor(this->descriptor());
+    this->feature_.set_prefix(this->prefix());
+    this->feature_.set_extractor(this->extractor());
+    feature_.Setup(context);
+  }
+
+  // Initializes the nested feature and sets feature type.
+  void Init(TaskContext *context) override {
+    feature_.Init(context);
+    num_base_values_ = feature_.GetFeatureType()->GetDomainSize();
+    set_feature_type(new RootFeatureType(
+        name(), *feature_.GetFeatureType(), RootValue()));
+  }
+
+  // Passes workspace requests and preprocessing to the nested feature.
+  void RequestWorkspaces(WorkspaceRegistry *registry) override {
+    feature_.RequestWorkspaces(registry);
+  }
+
+  void Preprocess(WorkspaceSet *workspaces, ParserState *state) const override {
+    feature_.Preprocess(workspaces, state->mutable_sentence()->mutable_source());
+  }
+
+ protected:
+  // Returns the special value to represent a root token.
+  FeatureValue RootValue() const { return num_base_values_; }
+
+  // Store the number of base values from the wrapped function so compute the
+  // root value.
+  int num_base_values_;
+
+  // The wrapped feature.
+  F feature_;
+};
+
 // Specialization of ParserSentenceFeatureFunction that calls the nested feature
 // with (Sentence, int) arguments based on the current integer focus.
 template<class F>
@@ -151,7 +196,7 @@ class BasicParserSentenceFeatureFunction :
 // with (Sentence, int) arguments based on the current integer focus.
 template<class F>
 class BasicParserSourceSentenceFeatureFunction :
-      public ParserSentenceFeatureFunction<F> {
+      public ParserSourceSentenceFeatureFunction<F> {
  public:
   FeatureValue Compute(const WorkspaceSet &workspaces, const ParserState &state,
                        int focus, const FeatureVector *result) const override {

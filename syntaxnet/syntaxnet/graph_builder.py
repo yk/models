@@ -16,6 +16,7 @@
 """Builds parser models."""
 
 import tensorflow as tf
+import tensorflow_fold as td
 
 import syntaxnet.load_parser_ops
 
@@ -129,6 +130,7 @@ class GreedyParser(object):
                allow_feature_weights=False,
                only_train='',
                arg_prefix=None,
+               source_features=[1] + [10] * 4,
                **unused_kwargs):
     """Initialize the graph builder with parameters defining the network.
 
@@ -202,11 +204,13 @@ class GreedyParser(object):
     # instance _AddParam.
     with tf.name_scope('params') as self._param_scope:
       self._relu_bias_init = tf.constant_initializer(bias_init)
+    self._source_features = source_features
+    self._source_size = len(source_features)
 
   @property
   def embedding_size(self):
     size = 0
-    for i in range(self._feature_size):
+    for i in range(self._source_size, self._feature_size):
       size += self._num_features[i] * self._embedding_sizes[i]
     return size
 
@@ -301,6 +305,7 @@ class GreedyParser(object):
                                                    [-1],
                                                    name='feature_%d' % index),
                                         self._allow_feature_weights)
+    # embedding = tf.Print(embedding, [tf.shape(features)], '{} {} {}'.format(num_features, embedding_size, num_ids))
     return tf.reshape(embedding, [-1, num_features * embedding_size])
 
   def _BuildNetwork(self, feature_endpoints, return_average=False):
@@ -320,9 +325,20 @@ class GreedyParser(object):
     """
     assert len(feature_endpoints) == self._feature_size
 
+    heads_ind = 1
+    sparse_features = feature_endpoints[heads_ind]
+    sparse_features_tensor = tf.convert_to_tensor(tf.reshape(sparse_features, [-1]))
+    indices, ids, weights = gen_parser_ops.unpack_sparse_features(sparse_features_tensor)
+    ids += 1
+    uss = tf.unsorted_segment_sum(ids, indices, tf.size(sparse_features_tensor))
+    uss = tf.reshape(uss, [-1, self._num_features[heads_ind]])
+    uss -= 1
+    uss -= 1
+    roots = tf.where(tf.equal(uss, -1))[:, -1]
+
     # Create embedding layer.
     embeddings = []
-    for i in range(self._feature_size):
+    for i in range(self._source_size, self._feature_size):
       embeddings.append(self._AddEmbedding(feature_endpoints[i],
                                            self._num_features[i],
                                            self._num_feature_ids[i],
@@ -330,7 +346,8 @@ class GreedyParser(object):
                                            i,
                                            return_average=return_average))
 
-    last_layer = tf.concat(embeddings, 1)
+    with tf.control_dependencies([tf.Print(indices, [roots], summarize=200)]):
+        last_layer = tf.concat(embeddings, 1)
     last_layer_size = self.embedding_size
 
     # Create ReLU layers.
@@ -402,11 +419,18 @@ class GreedyParser(object):
 
   def _AddCostFunction(self, batch_size, gold_actions, logits):
     """Cross entropy plus L2 loss on weights and biases of the hidden layers."""
-    dense_golden = BatchedSparseToDense(gold_actions, self._num_actions)
+    # dense_golden = BatchedSparseToDense(gold_actions, self._num_actions)
+    # cross_entropy = tf.div(
+        # tf.reduce_sum(
+            # tf.nn.softmax_cross_entropy_with_logits(
+                # labels=dense_golden, logits=logits)), batch_size)
+
+    # gold_actions = tf.Print(gold_actions, [tf.shape(gold_actions)])
     cross_entropy = tf.div(
         tf.reduce_sum(
-            tf.nn.softmax_cross_entropy_with_logits(
-                labels=dense_golden, logits=logits)), batch_size)
+            tf.nn.sparse_softmax_cross_entropy_with_logits(
+                labels=gold_actions, logits=logits)), batch_size)
+
     regularized_params = [tf.nn.l2_loss(p)
                           for k, p in self.params.items()
                           if k.startswith('weights') or k.startswith('bias')]

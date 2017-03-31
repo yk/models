@@ -184,6 +184,8 @@ class ParserState {
 
   std::vector<int> tags_;
 
+  std::vector<int> transitions_;
+
  private:
   // Empty constructor used for the cloning operation.
   ParserState() {}

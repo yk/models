@@ -244,7 +244,9 @@ class TermFrequencyMapSetFeature : public TokenLookupSetFeature {
 
   // Number of unique values.
 
-  int64 NumValues() const override { return term_map_->Size(); }
+  int64 NumValues() const override { 
+      return term_map_->Size(); 
+  }
 
   // Special value for strings not in the map.
   FeatureValue UnknownValue() const { return term_map_->Size(); }

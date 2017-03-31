@@ -40,9 +40,12 @@ namespace syntaxnet {
 
 class ArcStandardTransitionState : public ParserTransitionState {
  public:
+     const ParserTransitionSystem* transition_system_;
   // Clones the transition state by returning a new object.
   ParserTransitionState *Clone() const override {
-    return new ArcStandardTransitionState();
+    auto* tst = new ArcStandardTransitionState();
+    tst->transition_system_ = transition_system_;
+    return tst;
   }
 
   // Pushes the root on the stack before using the parser state in parsing.
@@ -68,6 +71,12 @@ class ArcStandardTransitionState : public ParserTransitionState {
           token->set_label(state.LabelAsString(state.RootLabel()));
         }
       }
+    }
+    sentence->clear_transition();
+    for(auto& tr : state.transitions_){
+        auto* ntr = sentence->add_transition();
+        ntr->set_action(tr);
+        ntr->set_label(transition_system_->ActionAsString(tr, state));
     }
   }
   // Whether a parsed token should be considered correct for evaluation.
@@ -166,14 +175,15 @@ class ArcStandardTransitionSystem : public ParserTransitionSystem {
     //shortest left arc if possible
     //shift else
       auto goldIndex = state.GoldIndex();
+      //std::cerr << "GI: " << goldIndex << ", stack: " << state.stack_ << std::endl;
       auto rightArc = state.GoldRightArcBeforeBuffer(goldIndex);
-      if(rightArc != -1){
+      if(rightArc != -1 && IsAllowedRightArc(state)){
           //std::cerr << "GoldRight " << goldIndex << " -> " << rightArc << std::endl;
           return RightArcAction(rightArc, &state);
       }
       
       auto leftArc = state.GoldLeftArcBeforeBuffer(goldIndex);
-      if(leftArc != -1){
+      if(leftArc != -1 && IsAllowedLeftArc(state)){
           //std::cerr << "GoldLeft " << goldIndex << " -> " << leftArc << std::endl;
           return LeftArcAction(leftArc, &state);
       }
@@ -288,6 +298,7 @@ class ArcStandardTransitionSystem : public ParserTransitionSystem {
     DCHECK(IsAllowedShift(*state));
     state->words_.push_back(word);
     state->stack_--;
+    state->transitions_.push_back(ShiftAction(word, state));
   }
 
   // Makes a left-arc between the two top tokens on stack and pops the second
@@ -295,20 +306,24 @@ class ArcStandardTransitionSystem : public ParserTransitionSystem {
   void PerformLeftArc(ParserState *state, int label) const {
     //std::cerr << "LeftArc " << label << std::endl;
     DCHECK(IsAllowedLeftArc(*state));
-    int head = state->head_.at(state->stack_);
+    //int head = state->head_.at(state->stack_);
+    int head = state->stack_;
     state->label_.insert(state->label_.begin() + state->stack_, label);
     state->head_.insert(state->head_.begin() + state->stack_, head);
     state->stack_++;
+    state->transitions_.push_back(LeftArcAction(label, state));
   }
 
   // Makes a right-arc between the two top tokens on stack and pops the stack.
   void PerformRightArc(ParserState *state, int label) const {
     //std::cerr << "RightArc " << label << std::endl;
     DCHECK(IsAllowedRightArc(*state));
-    int head = state->head_.at(state->stack_);
+    //int head = state->head_.at(state->stack_);
+    int head = state->stack_;
     state->stack_++;
     state->label_.insert(state->label_.begin() + state->stack_, label);
     state->head_.insert(state->head_.begin() + state->stack_, head);
+    state->transitions_.push_back(RightArcAction(label, state));
   }
 
   // We are in a deterministic state when we either reached the end of the input
@@ -330,18 +345,20 @@ class ArcStandardTransitionSystem : public ParserTransitionSystem {
                         const ParserState &state) const override {
     switch (ActionType(action, &state)) {
       case SHIFT:
-        return "SHIFT(" + state.WordAsString(Label(action, &state)) + ")";
+        return "SHIFT(" + state.WordAsString(Label(action, &state)) + ":" + std::to_string(Label(action, &state)) + ")";
       case LEFT_ARC:
-        return "LEFT_ARC(" + state.LabelAsString(Label(action, &state)) + ")";
+        return "LEFT_ARC(" + state.LabelAsString(Label(action, &state)) + ":" + std::to_string(Label(action, &state)) + ")";
       case RIGHT_ARC:
-        return "RIGHT_ARC(" + state.LabelAsString(Label(action, &state)) + ")";
+        return "RIGHT_ARC(" + state.LabelAsString(Label(action, &state)) + ":" + std::to_string(Label(action, &state)) + ")";
     }
     return "UNKNOWN";
   }
 
   // Returns a new transition state to be used to enhance the parser state.
   ParserTransitionState *NewTransitionState(bool training_mode) const override {
-    return new ArcStandardTransitionState();
+    auto* tst = new ArcStandardTransitionState();
+    tst->transition_system_ = this;
+    return tst;
   }
 
   // Meta information API. Returns token indices to link parser actions back

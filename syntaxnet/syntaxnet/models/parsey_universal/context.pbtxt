@@ -635,8 +635,6 @@ input {
   }
 }
 
-
-
 input {
   name: 'nc-mrg-en-fr'
   record_format: 'conll-sentence'
@@ -646,14 +644,90 @@ input {
 }
 Parameter {
   name: "brain_translator_embedding_dims"
-  value: "32;32;32;64"
+  value: "1;1;32;32;256;32;256"
 }
 Parameter {
   name: "brain_translator_embedding_names"
-  value: "labels;morphology;tags;words"
+  value: "sourcelengths;sourceheads;sourcelabels;sourcetags;sourcewords;labels;words"
 }
+
 Parameter {
   name: "brain_translator_features"
+  value: "source(0).sourcelength; "
+         "source(0).sourcehead.focus "
+         "source(1).sourcehead.focus "
+         "source(2).sourcehead.focus "
+         "source(3).sourcehead.focus "
+         "source(4).sourcehead.focus "
+         "source(5).sourcehead.focus "
+         "source(6).sourcehead.focus "
+         "source(7).sourcehead.focus "
+         "source(8).sourcehead.focus "
+         "source(9).sourcehead.focus; "
+         "source(0).sourcelabel "
+         "source(1).sourcelabel "
+         "source(2).sourcelabel "
+         "source(3).sourcelabel "
+         "source(4).sourcelabel "
+         "source(5).sourcelabel "
+         "source(6).sourcelabel "
+         "source(7).sourcelabel "
+         "source(8).sourcelabel "
+         "source(9).sourcelabel; "
+         "source(0).sourcetag "
+         "source(1).sourcetag "
+         "source(2).sourcetag "
+         "source(3).sourcetag "
+         "source(4).sourcetag "
+         "source(5).sourcetag "
+         "source(6).sourcetag "
+         "source(7).sourcetag "
+         "source(8).sourcetag "
+         "source(9).sourcetag; "
+         "source(0).sourceword "
+         "source(1).sourceword "
+         "source(2).sourceword "
+         "source(3).sourceword "
+         "source(4).sourceword "
+         "source(5).sourceword "
+         "source(6).sourceword "
+         "source(7).sourceword "
+         "source(8).sourceword "
+         "source(9).sourceword; "
+         "stack(0).label "
+         "stack(1).label "
+         "stack(2).label "
+         "stack(3).label "
+         "stack(4).label "
+         "stack(5).label "
+         "stack(6).label "
+         "stack(7).label "
+         "stack(8).label "
+         "stack(9).label "
+         "buffer(0).label "
+         "buffer(1).label "
+         "buffer(2).label "
+         "buffer(3).label "
+         "buffer(4).label "
+         "buffer(5).label "
+         "buffer(6).label "
+         "buffer(7).label "
+         "buffer(8).label "
+         "buffer(9).label; "
+         "buffer(0).word "
+         "buffer(1).word "
+         "buffer(2).word "
+         "buffer(3).word "
+         "buffer(4).word "
+         "buffer(5).word "
+         "buffer(6).word "
+         "buffer(7).word "
+         "buffer(8).word "
+         "buffer(9).word "
+}
+
+Parameter {
+  name: "brain_translator_features_old"
   value: "stack.child(1).label "
          "stack.child(1).sibling(-1).label "
          "stack.child(-1).label "

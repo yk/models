@@ -213,7 +213,9 @@ class CoNLLSyntaxFormat : public DocumentFormat {
       }
     }
 
-    if (sentence->token_size() > 0 || sentence->source().token_size() > 0 && sentence->target().token_size() > 0) {
+    auto longEnough = sentence->token_size() > 0 || sentence->source().token_size() > 0 && sentence->target().token_size() > 0;
+    auto notTooLong = sentence->token_size() <= 10 && sentence->source().token_size() <= 10 && sentence->target().token_size() <= 10;
+    if (longEnough && notTooLong) {
       sentence->set_docid(key);
       sentence->set_text(text);
       sentence->mutable_source()->set_text(sourceText);

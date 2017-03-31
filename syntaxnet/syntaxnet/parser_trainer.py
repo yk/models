@@ -33,6 +33,7 @@ from syntaxnet import structured_graph_builder
 from syntaxnet.ops import gen_parser_ops
 from syntaxnet import task_spec_pb2
 from syntaxnet import sentence_pb2
+from tensorflow.python.client import timeline
 
 flags = tf.app.flags
 FLAGS = flags.FLAGS
@@ -145,18 +146,20 @@ def Eval(sess, parser, num_steps, best_eval_metric):
         parser.evaluation['epochs'], parser.evaluation['eval_metrics'],
         parser.evaluation['documents']
     ])
-    for docs in tf_documents:
+    logging.info(len(tf_documents))
+    for docs in tf_documents[:10]:
         doc = sentence_pb2.Sentence()
         doc.ParseFromString(docs)
-        for tk in doc.token:
-            print(tk.word, end=' ')
-        print()
+        logging.info(" ".join([tk.word for tk in doc.source.token]))
+        logging.info(" ".join([tk.word for tk in doc.target.token]))
+        logging.info(" ".join([tk.word for tk in doc.token]))
+        logging.info(" ".join([tr.label for tr in doc.transition]))
 
     num_tokens += tf_eval_metrics[0]
     num_correct += tf_eval_metrics[1]
     if num_epochs is None:
       num_epochs = tf_eval_epochs
-    elif num_epochs < tf_eval_epochs:
+    elif num_epochs < tf_eval_epochs or len(tf_documents) > 0:
       break
   eval_metric = 0 if num_tokens == 0 else (100.0 * num_correct / num_tokens)
   logging.info('Seconds elapsed in evaluation: %.2f, '
@@ -169,6 +172,7 @@ def Eval(sess, parser, num_steps, best_eval_metric):
     parser.saver.save(sess, OutputPath('latest-model'))
     if eval_metric > best_eval_metric:
       parser.saver.save(sess, OutputPath('model'))
+    logging.info('Done writing out trained parameters.')
 
   return max(eval_metric, best_eval_metric)
 
@@ -256,6 +260,18 @@ def Train(sess, num_actions, feature_sizes, domain_sizes, embedding_dims):
   while num_epochs < FLAGS.num_epochs:
     tf_epochs, tf_cost, _ = sess.run([parser.training[
         'epochs'], parser.training['cost'], parser.training['train_op']])
+
+    # run_metadata = tf.RunMetadata()
+    # tf_epochs, tf_cost, _ = sess.run([parser.training[
+        # 'epochs'], parser.training['cost'], parser.training['train_op']],
+    # options=tf.RunOptions(trace_level=tf.RunOptions.FULL_TRACE),
+    # run_metadata=run_metadata)
+    # tl = timeline.Timeline(run_metadata.step_stats)
+    # ctf = tl.generate_chrome_trace_format()
+    # with open('timeline.json', 'w') as f:
+        # f.write(ctf)
+    # exit(1)
+
     num_epochs = tf_epochs
     num_steps += 1
     cost_sum += tf_cost
@@ -288,7 +304,6 @@ def main(unused_argv):
     feature_sizes, domain_sizes, embedding_dims, num_actions = sess.run(
         gen_parser_ops.feature_size(task_context=OutputPath('context'),
                                     arg_prefix=FLAGS.arg_prefix))
-
   # Well formed and projectivize.
   if FLAGS.projectivize_training_set:
     logging.info('Preprocessing...')

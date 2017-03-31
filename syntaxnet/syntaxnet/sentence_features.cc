@@ -408,9 +408,12 @@ REGISTER_SYNTAXNET_CLASS_REGISTRY("sentence+index feature function",
 
 // Register the features defined in the header.
 REGISTER_SENTENCE_IDX_FEATURE("word", Word);
+REGISTER_SENTENCE_IDX_FEATURE("sourceword", SourceWord);
 REGISTER_SENTENCE_IDX_FEATURE("char", Char);
 REGISTER_SENTENCE_IDX_FEATURE("lcword", LowercaseWord);
 REGISTER_SENTENCE_IDX_FEATURE("tag", Tag);
+REGISTER_SENTENCE_IDX_FEATURE("sourcetag", SourceTag);
+REGISTER_SENTENCE_IDX_FEATURE("sourcelabel", SourceLabel);
 REGISTER_SENTENCE_IDX_FEATURE("offset", Offset);
 REGISTER_SENTENCE_IDX_FEATURE("hyphen", Hyphen);
 REGISTER_SENTENCE_IDX_FEATURE("digit", Digit);

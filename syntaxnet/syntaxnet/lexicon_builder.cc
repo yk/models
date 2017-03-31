@@ -310,15 +310,15 @@ class FeatureSize : public OpKernel {
     string source_label_map_path =
         TaskContext::InputFile(*task_context_.GetInput("source-label-map"));
     source_label_map_ = SharedStoreUtils::GetWithDefaultName<TermFrequencyMap>(
-        label_map_path, 0, 0);
+        source_label_map_path, 0, 0);
     string source_word_map_path =
         TaskContext::InputFile(*task_context_.GetInput("source-word-map"));
     source_word_map_ = SharedStoreUtils::GetWithDefaultName<TermFrequencyMap>(
-        word_map_path, 0, 0);
+        source_word_map_path, 0, 0);
     string source_tag_map_path =
         TaskContext::InputFile(*task_context_.GetInput("source-tag-map"));
     source_tag_map_ = SharedStoreUtils::GetWithDefaultName<TermFrequencyMap>(
-        tag_map_path, 0, 0);
+        source_tag_map_path, 0, 0);
   }
 
   ~FeatureSize() override {
