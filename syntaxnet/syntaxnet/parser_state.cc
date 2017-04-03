@@ -196,6 +196,8 @@ int ParserState::GoldWord(int position) const {
 
 int ParserState::Word(int position) const {
   return words_[NumTokens() - 1 - position];
+}
+
 int ParserState::NumLabels() const {
   return label_map_->Size() + (RootLabel() == kDefaultRootLabel ? 1 : 0);
 }

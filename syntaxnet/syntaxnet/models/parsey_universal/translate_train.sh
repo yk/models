@@ -21,7 +21,7 @@ PLANG=$2
 
 PARAMS=200x200-0.08-4400-0.85-4
 
-python3 bazel-bin/syntaxnet/parser_trainer \
+python2 bazel-bin/syntaxnet/parser_trainer \
     --arg_prefix=brain_translator \
     --batch_size=32 \
     --decay_steps=4400 \

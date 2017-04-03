@@ -41,7 +41,7 @@ class WholeSentenceFeaturesTest : public ::testing::Test {
     extractor_.RequestWorkspaces(&registry_);
     workspaces_.Reset(registry_);
     state_.reset(new ParserState(&sentence_, nullptr /* no transition state */,
-                                 &label_map_));
+                                 &label_map_, nullptr, nullptr));
     extractor_.Preprocess(&workspaces_, state_.get());
   }
 

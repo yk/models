@@ -247,8 +247,8 @@ REGISTER_PARSER_IDX_FEATURE_FUNCTION("sourcelabel", SourceLabelFeatureFunction);
 typedef BasicParserSourceSentenceFeatureFunction<SourceWord> SourceWordFeatureFunction;
 REGISTER_PARSER_IDX_FEATURE_FUNCTION("sourceword", SourceWordFeatureFunction);
 
-typedef BasicParserSentenceFeatureFunction<KnownWord> KnownWordFeatureFunction;
-REGISTER_PARSER_IDX_FEATURE_FUNCTION("known-word", KnownWordFeatureFunction);
+//typedef BasicParserSentenceFeatureFunction<KnownWord> KnownWordFeatureFunction;
+//REGISTER_PARSER_IDX_FEATURE_FUNCTION("known-word", KnownWordFeatureFunction);
 
 typedef BasicParserSentenceFeatureFunction<Char> CharFeatureFunction;
 REGISTER_PARSER_IDX_FEATURE_FUNCTION("char", CharFeatureFunction);

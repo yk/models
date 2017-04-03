@@ -16,7 +16,6 @@
 """Builds parser models."""
 
 import tensorflow as tf
-import tensorflow_fold as td
 
 import syntaxnet.load_parser_ops
 
@@ -329,7 +328,7 @@ class GreedyParser(object):
     heads_ind = 1
     sparse_features = feature_endpoints[heads_ind]
     sparse_features_tensor = tf.convert_to_tensor(tf.reshape(sparse_features, [-1]))
-    indices, ids, weights = gen_parser_ops.unpack_sparse_features(sparse_features_tensor)
+    indices, ids, weights = gen_parser_ops.unpack_syntax_net_sparse_features(sparse_features_tensor)
     ids += 1
     uss = tf.unsorted_segment_sum(ids, indices, tf.size(sparse_features_tensor))
     uss = tf.reshape(uss, [-1, self._num_features[heads_ind]])

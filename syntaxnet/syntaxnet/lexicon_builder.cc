@@ -321,15 +321,16 @@ class FeatureSize : public OpKernel {
     OP_REQUIRES_OK(context, context->GetAttr("arg_prefix", &arg_prefix_));
     OP_REQUIRES_OK(context, context->MatchSignature(
                                 {}, {DT_INT32, DT_INT32, DT_INT32, DT_INT32}));
-    string data;
-    OP_REQUIRES_OK(context, ReadFileToString(tensorflow::Env::Default(),
-                                             task_context_path, &data));
-    OP_REQUIRES(
-        context,
-        TextFormat::ParseFromString(data, task_context_.mutable_spec()),
-        InvalidArgument("Could not parse task context at ", task_context_path));
 
-    //LoadSpec(context, task_context_.mutable_spec());
+    //string data;
+    //OP_REQUIRES_OK(context, ReadFileToString(tensorflow::Env::Default(),
+                                             //task_context_path, &data));
+    //OP_REQUIRES(
+        //context,
+        //TextFormat::ParseFromString(data, task_context_.mutable_spec()),
+        //InvalidArgument("Could not parse task context at ", task_context_path));
+
+    LoadSpec(context, task_context_.mutable_spec());
     string label_map_path =
         TaskContext::InputFile(*task_context_.GetInput("label-map"));
     label_map_ = SharedStoreUtils::GetWithDefaultName<TermFrequencyMap>(

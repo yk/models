@@ -346,6 +346,7 @@ cc_library(
         ":segmenter_utils",
         ":sentence_features",
         ":sentence_proto",
+        ":kbest_syntax_proto",
         ":shared_store",
         ":task_context",
         ":term_frequency_map",
