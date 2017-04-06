@@ -2,15 +2,19 @@
 
 This repository contains machine learning models implemented in
 [TensorFlow](https://tensorflow.org). The models are maintained by their
-respective authors.
+respective authors. To propose a model for inclusion, please submit a pull
+request.
 
-To propose a model for inclusion please submit a pull request.
+Currently, the models are compatible with TensorFlow 1.0 or later. If you are
+running TensorFlow 0.12 or earlier, please
+[upgrade your installation](https://www.tensorflow.org/install).
 
 
 ## Models
 - [autoencoder](autoencoder): various autoencoders.
 - [compression](compression): compressing and decompressing images using a pre-trained Residual GRU network.
 - [differential_privacy](differential_privacy): privacy-preserving student models from multiple teachers.
+- [domain_adaptation](domain_adaptation): domain separation networks.
 - [im2txt](im2txt): image-to-text neural network for image captioning.
 - [inception](inception): deep convolutional networks for computer vision.
 - [learning_to_remember_rare_events](learning_to_remember_rare_events):  a large-scale life-long memory module for use in deep learning.
