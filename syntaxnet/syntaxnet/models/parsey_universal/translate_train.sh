@@ -20,15 +20,17 @@ MODEL_DIR=$1
 PLANG=$2
 
 PARAMS=200x200-0.08-4400-0.85-4
+#--compute_lexicon \
+#--learning_rate=0.08 \
+#--momentum=0.85 \
 
-python2 bazel-bin/syntaxnet/parser_trainer \
+python2 $PARSER_TRAIN \
     --arg_prefix=brain_translator \
     --batch_size=32 \
     --decay_steps=4400 \
     --graph_builder=greedy \
     --hidden_layer_sizes=200,200 \
-    --learning_rate=0.08 \
-    --momentum=0.85 \
+    --learning_rate=0.003 \
     --output_path=$MODEL_DIR \
     --task_context=$CONTEXT \
     --seed=4 \
@@ -38,4 +40,4 @@ python2 bazel-bin/syntaxnet/parser_trainer \
     --alsologtostderr \
     --report_every=100 \
     --checkpoint_every=1000 \
-    --num_epochs=10
+    --num_epochs=100

@@ -551,14 +551,19 @@ class GreedyParser(object):
       else:
         trainable_params = self.params.values()
       lr = self._AddLearningRate(learning_rate, decay_steps)
-      optimizer = tf.train.MomentumOptimizer(lr,
-                                             momentum,
+      # optimizer = tf.train.MomentumOptimizer(lr,
+                                             # momentum,
+                                             # use_locking=self._use_locking)
+      optimizer = tf.train.RMSPropOptimizer(lr,
                                              use_locking=self._use_locking)
       train_op = optimizer.minimize(nodes['cost'], var_list=trainable_params)
       for param in trainable_params:
         slot = optimizer.get_slot(param, 'momentum')
         self.inits[slot.name] = state_ops.init_variable(slot,
                                                         tf.zeros_initializer())
+        self.variables[slot.name] = slot
+        slot = optimizer.get_slot(param, 'rms')
+        self.inits[slot.name] = slot.initializer
         self.variables[slot.name] = slot
       numerical_checks = [
           tf.check_numerics(param,
