@@ -16,6 +16,8 @@
 """Builds parser models."""
 
 import tensorflow as tf
+import tensorflow_fold as td
+import tensorflow.contrib.rnn as crnn
 
 import syntaxnet.load_parser_ops
 
@@ -219,7 +221,8 @@ class GreedyParser(object):
                 dtype,
                 name,
                 initializer=None,
-                return_average=False):
+                return_average=False,
+                reuse_name=False):
     """Add a model parameter w.r.t. we expect to compute gradients.
 
     _AddParam creates both regular parameters (usually for training) and
@@ -241,7 +244,8 @@ class GreedyParser(object):
       # Put all parameters and their initializing ops in their own scope
       # irrespective of the current scope (training or eval).
       with tf.name_scope(self._param_scope):
-        self.params[name] = tf.get_variable(name, shape, dtype, initializer)
+        with tf.variable_scope('', reuse=reuse_name):
+            self.params[name] = tf.get_variable(name, shape, dtype, initializer)
         param = self.params[name]
         if initializer is not None:
           self.inits[name] = state_ops.init_variable(param, initializer)
@@ -308,7 +312,7 @@ class GreedyParser(object):
     # embedding = tf.Print(embedding, [tf.shape(features)], '{} {} {}'.format(num_features, embedding_size, num_ids))
     return tf.reshape(embedding, [-1, num_features * embedding_size])
 
-  def _BuildNetwork(self, feature_endpoints, return_average=False):
+  def _BuildNetwork(self, feature_endpoints, batch_size, return_average=False):
     """Builds a feed-forward part of the net given features as input.
 
     The network topology is already defined in the constructor, so multiple
@@ -325,6 +329,12 @@ class GreedyParser(object):
     """
     assert len(feature_endpoints) == self._feature_size
 
+    lengths_ind = 0
+    sparse_features = feature_endpoints[lengths_ind]
+    sparse_features_tensor = tf.convert_to_tensor(tf.reshape(sparse_features, [-1]))
+    _, lengths, _ = gen_parser_ops.unpack_syntax_net_sparse_features(sparse_features_tensor)
+    # lengths.set_shape((batch_size,))
+
     heads_ind = 1
     sparse_features = feature_endpoints[heads_ind]
     sparse_features_tensor = tf.convert_to_tensor(tf.reshape(sparse_features, [-1]))
@@ -334,7 +344,45 @@ class GreedyParser(object):
     uss = tf.reshape(uss, [-1, self._num_features[heads_ind]])
     uss -= 1
     uss -= 1
-    roots = tf.where(tf.equal(uss, -1))[:, -1]
+    roots = tf.reshape(tf.where(tf.equal(uss, -1))[:, -1], (-1, 1))
+
+    source_embeddings = []
+    for i in range(2, self._source_size):
+      semb = self._AddEmbedding(feature_endpoints[i],
+                                           self._num_features[i],
+                                           self._num_feature_ids[i],
+                                           self._embedding_sizes[i],
+                                           i,
+                                           return_average=return_average)
+      semb = tf.reshape(semb, (-1, self._num_features[i], self._embedding_sizes[i]))
+      source_embeddings.append(semb)
+    source_embeddings = tf.concat(source_embeddings, -1)
+    source_embeddings = tf.unstack(tf.transpose(source_embeddings, (1, 0, 2)))
+
+    # lstm = td.ScopedLayer(crnn.BasicLSTMCell(100), 'lstm')
+    # embed_subtree = td.ForwardDeclaration(name='embed_subtree')
+    # model = td.Map(td.Vector(source_embeddings.get_shape().as_list()[-1])) >> td.RNN(lstm) >> td.GetItem(0) >> td.GetItem(-1)
+    # model = td.Compiler.create(model, input_tensor=source_embeddings)
+    # for v in tf.trainable_variables():
+        # if v.name.startswith('lstm/'):
+            # self._AddParam(v.get_shape(), v.dtype, v.op.name, reuse_name=True)
+    # print(model)
+    print(source_embeddings)
+    with tf.variable_scope('', reuse=len([v for v in tf.trainable_variables() if v.name.startswith('lstm/')]) > 0):
+        lstm_cell = crnn.BasicLSTMCell(100)
+        _, lstm_state = crnn.static_rnn(lstm_cell, source_embeddings, dtype=tf.float32, sequence_length=lengths, scope='lstm')
+    for v in tf.trainable_variables():
+        if v.name.startswith('lstm/'):
+            self._AddParam(v.get_shape(), v.dtype, v.op.name, reuse_name=True)
+            self.inits[v.op.name] = v.initializer
+    print(lstm_state)
+    lstm_state = tf.concat(lstm_state, -1)
+    print(uss, roots)
+    print((tf.equal(uss, roots)))
+    # print(lstm)
+    print(source_embeddings)
+    # print(td.RNN(lstm))
+    print(batch_size)
 
     # Create embedding layer.
     embeddings = []
@@ -346,9 +394,11 @@ class GreedyParser(object):
                                            i,
                                            return_average=return_average))
 
-    with tf.control_dependencies([tf.Print(indices, [roots], summarize=200)]):
-        last_layer = tf.concat(embeddings, 1)
-    last_layer_size = self.embedding_size
+    last_layer = tf.concat(embeddings, 1)
+    last_layer = tf.concat([last_layer] + [lstm_state], -1)
+
+    # last_layer_size = self.embedding_size
+    last_layer_size = last_layer.get_shape().as_list()[-1]
 
     # Create ReLU layers.
     for i, hidden_layer_size in enumerate(self._hidden_layer_sizes):
@@ -467,7 +517,7 @@ class GreedyParser(object):
           tf.constant_initializer(-1.0))
       nodes.update(self._AddDecodedReader(task_context, batch_size, nodes[
           'transition_scores'], corpus_name))
-      nodes.update(self._BuildNetwork(nodes['feature_endpoints'],
+      nodes.update(self._BuildNetwork(nodes['feature_endpoints'], batch_size,
                                       return_average=self._use_averaging))
       nodes['eval_metrics'] = cf.with_dependencies(
           [tf.cond(tf.greater(tf.size(nodes['logits']), 0),
@@ -539,7 +589,7 @@ class GreedyParser(object):
     with tf.name_scope('training'):
       nodes = self.training
       nodes.update(self._AddGoldReader(task_context, batch_size, corpus_name))
-      nodes.update(self._BuildNetwork(nodes['feature_endpoints'],
+      nodes.update(self._BuildNetwork(nodes['feature_endpoints'], batch_size,
                                       return_average=False))
       nodes.update(self._AddCostFunction(batch_size, nodes['gold_actions'],
                                          nodes['logits']))

@@ -189,6 +189,7 @@ class ArcStandardTransitionSystem : public ParserTransitionSystem {
       }
 
       auto goldWord = state.GoldWord(goldIndex);
+      //std::cerr << "GoldShift " << goldIndex << " : " << goldWord << std::endl;
       return ShiftAction(goldWord, &state);
 
 
